@@ -37,7 +37,7 @@ const state = {
       fullByteCompare: false,
     },
     /** @type {'folderByFolder' | 'deepScan'} */
-    mode: 'folderByFolder',
+    mode: 'deepScan',
   },
 
   /** @type {import('./fileInfo.js').FileInfo[]} */

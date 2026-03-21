@@ -113,3 +113,25 @@
 .scan-folder-name.scanning {
   color: var(--color-accent);
 }
+
+/* ─── Scan Pulse Animation ─── */
+@keyframes scanPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 122, 204, 0); }
+  50% { box-shadow: 0 0 24px 4px rgba(0, 122, 204, 0.15); }
+}
+
+.scan-status.active {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  animation: scanPulse 2.5s ease-in-out infinite;
+}
+
+.scan-status.completed {
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  animation: none;
+}

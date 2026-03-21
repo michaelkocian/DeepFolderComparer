@@ -7,7 +7,7 @@ import { getState, setState } from './state.js';
 import { icons } from './icons.js';
 import { showError } from './toast.js';
 
-export function renderFolderPicker(container) {
+export function renderFolderPicker(container, { onStartScan } = {}) {
   if (!('showDirectoryPicker' in window)) {
     container.innerHTML = `
       <div class="unsupported-warning">
@@ -60,14 +60,13 @@ export function renderFolderPicker(container) {
   btnStartScan.addEventListener('click', () => {
     const state = getState();
     if (state.sourceHandle && state.destHandle) {
-      setState({ currentStage: 'scan' });
+      if (onStartScan) onStartScan();
     }
   });
 
   async function pickFolder(which) {
     try {
       const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
-      const state = getState();
 
       if (which === 'source') {
         setState({ sourceHandle: handle, sourceName: handle.name });

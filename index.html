@@ -33,35 +33,36 @@
     <!-- ─── Stage Container ─── -->
     <div class="stage-container">
 
-      <!-- Stage 1: Folder Selection -->
-      <section id="stageSelect" class="stage active">
-        <div class="centered-content">
-          <div id="folderPickerRoot"></div>
+      <!-- Stage: Setup (folder selection + scan + comparison config) -->
+      <section id="stageSetup" class="stage active">
+        <div class="setup-layout">
+          <div class="setup-content">
+            <div class="setup-top" id="setupTop">
+              <div class="setup-left">
+                <div id="folderPickerRoot"></div>
+              </div>
+              <div class="setup-right" id="setupRight">
+                <div id="scanProgressRoot"></div>
+              </div>
+            </div>
+            <div class="setup-bottom" id="setupBottom">
+              <div id="comparisonConfigRoot"></div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- Stage 2: Scanning -->
-      <section id="stageScan" class="stage">
-        <div class="centered-content">
-          <div id="scanProgressRoot"></div>
-        </div>
-      </section>
-
-      <!-- Stage 3: Comparison Config + Comparison -->
-      <section id="stageCompare" class="stage">
-        <div class="centered-content">
-          <div id="comparisonConfigRoot"></div>
-        </div>
-      </section>
-
-      <!-- Stage 4: Results -->
+      <!-- Stage: Results -->
       <section id="stageResults" class="stage">
         <div id="resultsToolbar" class="results-toolbar"></div>
         <div class="split-layout" id="splitLayout">
           <div class="panel" id="panelLeft">
             <div class="panel-header">
-              <span class="panel-title">Missing Files (Source)</span>
-              <span class="badge" id="missingCount">0</span>
+              <div class="panel-header-left">
+                <span class="panel-title">Missing Files (Source)</span>
+                <span class="badge" id="missingCount">0</span>
+              </div>
+              <div class="panel-header-right" id="panelControlsLeft"></div>
             </div>
             <div class="panel-body">
               <div class="tree-sidebar scrollable" id="treeLeft"></div>
@@ -78,8 +79,11 @@
 
           <div class="panel" id="panelRight">
             <div class="panel-header">
-              <span class="panel-title">Destination</span>
-              <span class="badge" id="destCount">0</span>
+              <div class="panel-header-left">
+                <span class="panel-title">Destination</span>
+                <span class="badge" id="destCount">0</span>
+              </div>
+              <div class="panel-header-right" id="panelControlsRight"></div>
             </div>
             <div class="panel-body">
               <div class="tree-sidebar scrollable" id="treeRight"></div>

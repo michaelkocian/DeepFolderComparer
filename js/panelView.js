@@ -7,7 +7,7 @@ import { getFileCategory, formatFileSize, formatDate } from './fileInfo.js';
 import { getFileIcon, createThumbnailObserver } from './thumbnailGenerator.js';
 import { icons } from './icons.js';
 import { getState, setState } from './state.js';
-import { buildFolderTree, renderTree, getFilesAtPath } from './treeView.js';
+import { buildFolderTree, renderTree, getFilesAtPath, getAllFilesUnderPath } from './treeView.js';
 
 /**
  * Render files into a grid.
@@ -152,6 +152,40 @@ export function renderBreadcrumb(container, folderPath, onNavigate) {
 }
 
 /**
+ * Render zoom + subfolder toggle controls into a panel header.
+ */
+function renderPanelHeaderControls(containerId, options) {
+  const container = document.getElementById(containerId);
+  const { zoom, onZoom, onToggleSubfolders } = options;
+
+  container.innerHTML = `
+    <button class="btn-icon subfolder-toggle" title="Show all files in subfolders">
+      ${icons.layers}
+    </button>
+    <div class="zoom-control compact">
+      <input type="range" min="1" max="10" value="${zoom}">
+      <span class="zoom-value">${zoom}</span>
+    </div>
+  `;
+
+  let subfolderActive = false;
+  const toggleBtn = container.querySelector('.subfolder-toggle');
+  toggleBtn.addEventListener('click', () => {
+    subfolderActive = !subfolderActive;
+    toggleBtn.classList.toggle('active', subfolderActive);
+    onToggleSubfolders(subfolderActive);
+  });
+
+  const slider = container.querySelector('input[type="range"]');
+  const valueSpan = container.querySelector('.zoom-value');
+  slider.addEventListener('input', (e) => {
+    const z = parseInt(e.target.value, 10);
+    valueSpan.textContent = z;
+    onZoom(z);
+  });
+}
+
+/**
  * Initialize the full left panel (missing files).
  */
 export function initLeftPanel(missingFiles) {
@@ -160,9 +194,19 @@ export function initLeftPanel(missingFiles) {
   let currentPath = state.leftSelectedPath;
   let currentObserver = null;
   let currentZoom = state.zoomLeft;
+  let showSubfolders = false;
+
+  // Render panel header controls
+  renderPanelHeaderControls('panelControlsLeft', {
+    zoom: currentZoom,
+    onZoom(z) { currentZoom = z; setState({ zoomLeft: z }); refresh(); },
+    onToggleSubfolders(active) { showSubfolders = active; refresh(); },
+  });
 
   function refresh() {
-    const files = getFilesAtPath(tree, currentPath);
+    const files = showSubfolders
+      ? getAllFilesUnderPath(tree, currentPath)
+      : getFilesAtPath(tree, currentPath);
 
     // Tree
     renderTree(
@@ -211,9 +255,19 @@ export function initRightPanel(destFiles, destHandle) {
   let currentObserver = null;
   let currentZoom = state.zoomRight;
   let allDestFiles = [...destFiles];
+  let showSubfolders = false;
+
+  // Render panel header controls
+  renderPanelHeaderControls('panelControlsRight', {
+    zoom: currentZoom,
+    onZoom(z) { currentZoom = z; setState({ zoomRight: z }); refresh(); },
+    onToggleSubfolders(active) { showSubfolders = active; refresh(); },
+  });
 
   async function refresh() {
-    const files = getFilesAtPath(tree, currentPath);
+    const files = showSubfolders
+      ? getAllFilesUnderPath(tree, currentPath)
+      : getFilesAtPath(tree, currentPath);
 
     // Tree with new folder support
     renderTree(

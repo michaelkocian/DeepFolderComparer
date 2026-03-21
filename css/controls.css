@@ -256,6 +256,16 @@
   text-align: center;
 }
 
+.zoom-control.compact input[type="range"] {
+  width: 70px;
+}
+
+/* ─── Subfolder Toggle ─── */
+.subfolder-toggle.active {
+  color: var(--color-accent) !important;
+  background: var(--color-bg-active) !important;
+}
+
 /* ─── Section heading ─── */
 .section-title {
   font-size: var(--font-size-lg);

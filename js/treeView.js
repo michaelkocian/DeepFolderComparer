@@ -189,6 +189,27 @@ function createTreeItem(node, displayName, onSelectFolder, isSelected, options) 
 }
 
 /**
+ * Get all files recursively under a given folder path.
+ * @param {object} tree - root node
+ * @param {string} folderPath - '' for root, or 'folder/subfolder'
+ * @returns {import('./fileInfo.js').FileInfo[]}
+ */
+export function getAllFilesUnderPath(tree, folderPath) {
+  const node = folderPath === '' ? tree : getNodeAtPath(tree, folderPath);
+  if (!node) return [];
+  const files = [];
+  collectAllFiles(node, files);
+  return files;
+}
+
+function collectAllFiles(node, files) {
+  files.push(...node.files);
+  for (const child of node.children.values()) {
+    collectAllFiles(child, files);
+  }
+}
+
+/**
  * Get files for a given folder path from the tree.
  * @param {object} tree - root node
  * @param {string} folderPath - '' for root, or 'folder/subfolder'

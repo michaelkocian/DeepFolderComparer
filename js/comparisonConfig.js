@@ -62,7 +62,6 @@ export function renderComparisonConfig(container, onStartCompare) {
       <div id="compareProgressRoot" style="display:none;"></div>
 
       <div class="config-actions">
-        <button class="btn btn-secondary" id="btnBackToScan">Back</button>
         <button class="btn btn-primary btn-lg" id="btnStartCompare">Start Comparing</button>
       </div>
     </div>
@@ -90,11 +89,6 @@ export function renderComparisonConfig(container, onStartCompare) {
         label.classList.toggle('selected', label.querySelector('input').checked);
       });
     });
-  });
-
-  // Back button
-  container.querySelector('#btnBackToScan').addEventListener('click', () => {
-    setState({ currentStage: 'select' });
   });
 
   // Start button

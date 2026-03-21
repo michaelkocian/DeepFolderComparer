@@ -80,6 +80,77 @@ html, body {
   overflow-y: auto;
 }
 
+/* ─── Setup Layout (combined folder selection + scan + compare) ─── */
+.setup-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  padding: var(--spacing-xxl);
+  overflow-y: auto;
+}
+
+.setup-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: auto 0;
+  width: 100%;
+  max-width: 960px;
+}
+
+.setup-top {
+  display: grid;
+  grid-template-columns: 1fr 0fr;
+  width: 100%;
+  transition: grid-template-columns 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+              gap 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 0;
+}
+
+.setup-top.expanded {
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xl);
+}
+
+.setup-left {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.setup-right {
+  opacity: 0;
+  overflow: hidden;
+  min-width: 0;
+  transition: opacity 0.5s ease 0.4s;
+}
+
+.setup-right.visible {
+  opacity: 1;
+}
+
+.setup-bottom {
+  width: 100%;
+  max-width: 640px;
+  opacity: 0;
+  transform: translateY(24px);
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.5s ease 0.15s,
+              transform 0.5s ease 0.15s,
+              max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              margin-top 0.5s ease;
+  margin-top: 0;
+}
+
+.setup-bottom.visible {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 800px;
+  margin-top: var(--spacing-xl);
+}
+
 /* ─── Split Panel Layout (for results stage) ─── */
 .split-layout {
   display: flex;
@@ -108,6 +179,19 @@ html, body {
   border-bottom: 1px solid var(--color-border);
   min-height: 36px;
   flex-shrink: 0;
+}
+
+.panel-header .panel-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.panel-header .panel-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .panel-header .panel-title {

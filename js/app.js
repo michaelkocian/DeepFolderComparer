@@ -1,9 +1,9 @@
 /**
  * DeepFolderComp — Main application orchestrator.
- * Manages stage transitions: select → scan → compare → results.
+ * Two-stage flow: setup (folder select + scan + compare config) → results.
  */
 
-import { getState, setState, subscribe } from './state.js';
+import { getState, setState } from './state.js';
 import { renderFolderPicker } from './folderPicker.js';
 import { scanDirectory } from './scanner.js';
 import { createProgressComponent } from './progress.js';
@@ -16,33 +16,25 @@ import { icons } from './icons.js';
 
 // ─── Stage elements ───
 const stages = {
-  select: document.getElementById('stageSelect'),
-  scan: document.getElementById('stageScan'),
-  compare: document.getElementById('stageCompare'),
+  setup: document.getElementById('stageSetup'),
   results: document.getElementById('stageResults'),
 };
 
-const headerControls = document.getElementById('headerControls');
+const setupTop = document.getElementById('setupTop');
+const setupRight = document.getElementById('setupRight');
+const setupBottom = document.getElementById('setupBottom');
 
 // ─── Initialize ───
 function init() {
-  renderFolderPicker(document.getElementById('folderPickerRoot'));
-
-  subscribe((state) => {
-    updateStageVisibility(state.currentStage);
-  });
-
-  subscribe((state) => {
-    if (state.currentStage === 'scan') {
-      runScan();
-    }
+  renderFolderPicker(document.getElementById('folderPickerRoot'), {
+    onStartScan: () => runScan(),
   });
 }
 
 // ─── Stage visibility ───
-function updateStageVisibility(activeStage) {
-  for (const [name, element] of Object.entries(stages)) {
-    element.classList.toggle('active', name === activeStage);
+function showStage(name) {
+  for (const [key, element] of Object.entries(stages)) {
+    element.classList.toggle('active', key === name);
   }
 }
 
@@ -53,11 +45,18 @@ async function runScan() {
   if (scanRunning) return;
   scanRunning = true;
 
+  // Reveal scan area with animation
+  setupTop.classList.add('expanded');
+  setupRight.classList.add('visible');
+
+  // Hide comparison config from previous run
+  setupBottom.classList.remove('visible');
+
   const state = getState();
   const scanRoot = document.getElementById('scanProgressRoot');
 
   scanRoot.innerHTML = `
-    <div class="scan-status">
+    <div class="scan-status active">
       <div class="scan-folder-status">
         <span class="scan-folder-label">Source:</span>
         <span class="scan-folder-name scanning" id="scanSourceLabel">${escapeHtml(state.sourceName)}</span>
@@ -90,13 +89,23 @@ async function runScan() {
     document.getElementById('scanDestLabel').className = 'scan-folder-name completed';
     document.getElementById('scanDestLabel').textContent = `${state.destName} (${destFiles.length} files)`;
 
+    // Remove scan pulse, show completed state
+    scanRoot.querySelector('.scan-status').classList.remove('active');
+    scanRoot.querySelector('.scan-status').classList.add('completed');
+
     setState({ sourceFiles, destFiles });
 
     showSuccess(`Scanned ${sourceFiles.length + destFiles.length} files total`);
 
-    // Auto-advance to comparison config after a short pause
-    await delay(800);
-    setState({ currentStage: 'compare' });
+    // Update scan button to "Rescan"
+    const btnScan = document.querySelector('#btnStartScan');
+    if (btnScan) {
+      btnScan.textContent = 'Rescan';
+    }
+
+    // Reveal comparison config with animation
+    await delay(400);
+    setupBottom.classList.add('visible');
     renderComparisonConfig(
       document.getElementById('comparisonConfigRoot'),
       () => runComparison()
@@ -152,8 +161,8 @@ async function runComparison() {
 
     showInfo(`Found ${missingFiles.length} missing file(s) in destination`);
 
-    await delay(800);
-    setState({ currentStage: 'results' });
+    await delay(600);
+    showStage('results');
     initResultsView();
   } catch (err) {
     showError(`Comparison failed: ${err.message}`);
@@ -169,7 +178,7 @@ async function runComparison() {
 function initResultsView() {
   const state = getState();
 
-  // Toolbar
+  // Simplified toolbar (zoom moved to panel headers)
   renderToolbar(state);
 
   // Init panels
@@ -180,9 +189,9 @@ function initResultsView() {
   initDragDrop(leftPanel, rightPanel);
 
   // Init panel divider resize
-  initPanelDivider(leftPanel, rightPanel);
+  initPanelDivider();
 
-  // Store refs for zoom controls
+  // Store refs for drag-drop
   window._deepFolderComp = { leftPanel, rightPanel };
 }
 
@@ -191,46 +200,17 @@ function renderToolbar(state) {
 
   toolbar.innerHTML = `
     <div class="toolbar-left">
-      <button class="btn btn-secondary btn-sm" id="btnBackToCompare">${icons.back} Back</button>
+      <button class="btn btn-secondary btn-sm" id="btnBackToSetup">${icons.back} Back</button>
       <span class="results-summary">
         <strong>${state.missingFiles.length}</strong> missing files from
         <strong>${state.sourceName}</strong>
       </span>
     </div>
-    <div class="toolbar-right">
-      <div class="zoom-control">
-        <label>Left zoom:</label>
-        <input type="range" min="1" max="10" value="${state.zoomLeft}" id="zoomSliderLeft">
-        <span class="zoom-value" id="zoomValueLeft">${state.zoomLeft}</span>
-      </div>
-      <div class="zoom-control">
-        <label>Right zoom:</label>
-        <input type="range" min="1" max="10" value="${state.zoomRight}" id="zoomSliderRight">
-        <span class="zoom-value" id="zoomValueRight">${state.zoomRight}</span>
-      </div>
-    </div>
   `;
 
   // Back button
-  toolbar.querySelector('#btnBackToCompare').addEventListener('click', () => {
-    setState({ currentStage: 'compare' });
-    renderComparisonConfig(
-      document.getElementById('comparisonConfigRoot'),
-      () => runComparison()
-    );
-  });
-
-  // Zoom sliders
-  toolbar.querySelector('#zoomSliderLeft').addEventListener('input', (e) => {
-    const zoom = parseInt(e.target.value, 10);
-    toolbar.querySelector('#zoomValueLeft').textContent = zoom;
-    if (window._deepFolderComp) window._deepFolderComp.leftPanel.setZoom(zoom);
-  });
-
-  toolbar.querySelector('#zoomSliderRight').addEventListener('input', (e) => {
-    const zoom = parseInt(e.target.value, 10);
-    toolbar.querySelector('#zoomValueRight').textContent = zoom;
-    if (window._deepFolderComp) window._deepFolderComp.rightPanel.setZoom(zoom);
+  toolbar.querySelector('#btnBackToSetup').addEventListener('click', () => {
+    showStage('setup');
   });
 }
 
