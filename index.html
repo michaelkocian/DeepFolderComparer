@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepFolderComp — Folder Comparison &amp; Delta Sync</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2285%22>📂</text></svg>">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/controls.css">
+  <link rel="stylesheet" href="css/folderPicker.css">
+  <link rel="stylesheet" href="css/progress.css">
+  <link rel="stylesheet" href="css/panels.css">
+  <link rel="stylesheet" href="css/tree.css">
+  <link rel="stylesheet" href="css/thumbnails.css">
+  <link rel="stylesheet" href="css/toast.css">
+</head>
+<body>
+  <div id="app">
+    <!-- ─── Header ─── -->
+    <header class="app-header">
+      <div class="app-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </svg>
+        DeepFolderComp
+      </div>
+      <div id="headerControls"></div>
+    </header>
+
+    <!-- ─── Stage Container ─── -->
+    <div class="stage-container">
+
+      <!-- Stage 1: Folder Selection -->
+      <section id="stageSelect" class="stage active">
+        <div class="centered-content">
+          <div id="folderPickerRoot"></div>
+        </div>
+      </section>
+
+      <!-- Stage 2: Scanning -->
+      <section id="stageScan" class="stage">
+        <div class="centered-content">
+          <div id="scanProgressRoot"></div>
+        </div>
+      </section>
+
+      <!-- Stage 3: Comparison Config + Comparison -->
+      <section id="stageCompare" class="stage">
+        <div class="centered-content">
+          <div id="comparisonConfigRoot"></div>
+        </div>
+      </section>
+
+      <!-- Stage 4: Results -->
+      <section id="stageResults" class="stage">
+        <div id="resultsToolbar" class="results-toolbar"></div>
+        <div class="split-layout" id="splitLayout">
+          <div class="panel" id="panelLeft">
+            <div class="panel-header">
+              <span class="panel-title">Missing Files (Source)</span>
+              <span class="badge" id="missingCount">0</span>
+            </div>
+            <div class="panel-body">
+              <div class="tree-sidebar scrollable" id="treeLeft"></div>
+              <div class="file-grid-area">
+                <div class="breadcrumb" id="breadcrumbLeft"></div>
+                <div class="file-grid-wrapper scrollable" id="gridWrapperLeft">
+                  <div class="file-grid" id="fileGridLeft"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-divider" id="panelDivider"></div>
+
+          <div class="panel" id="panelRight">
+            <div class="panel-header">
+              <span class="panel-title">Destination</span>
+              <span class="badge" id="destCount">0</span>
+            </div>
+            <div class="panel-body">
+              <div class="tree-sidebar scrollable" id="treeRight"></div>
+              <div class="file-grid-area">
+                <div class="breadcrumb" id="breadcrumbRight"></div>
+                <div class="file-grid-wrapper scrollable" id="gridWrapperRight">
+                  <div class="file-grid" id="fileGridRight"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- JS Modules -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

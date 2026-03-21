@@ -1,0 +1,120 @@
+/* ─── Folder Tree ─── */
+.tree-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tree-list .tree-list {
+  padding-left: var(--spacing-lg);
+}
+
+.tree-item {
+  user-select: none;
+}
+
+.tree-item-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 2px var(--spacing-sm);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  min-height: 24px;
+}
+
+.tree-item-row:hover {
+  background: var(--color-bg-hover);
+}
+
+.tree-item-row.selected {
+  background: var(--color-bg-active);
+  color: var(--color-text-bright);
+}
+
+.tree-item-row .tree-expand {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform var(--transition-fast);
+}
+
+.tree-item-row .tree-expand svg {
+  width: 10px;
+  height: 10px;
+}
+
+.tree-item-row .tree-expand.expanded {
+  transform: rotate(90deg);
+}
+
+.tree-item-row .tree-expand.empty {
+  visibility: hidden;
+}
+
+.tree-item-row .tree-folder-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--color-warning);
+}
+
+.tree-item-row .tree-folder-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.tree-item-row .tree-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-item-row .tree-badge {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.tree-item .tree-children {
+  display: none;
+}
+
+.tree-item.expanded > .tree-children {
+  display: block;
+}
+
+/* ─── Tree drop target ─── */
+.tree-item-row.drop-target {
+  outline: 1px dashed var(--color-drop-zone-border);
+  background: var(--color-drop-zone);
+}
+
+/* ─── New folder input ─── */
+.tree-new-folder {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 2px var(--spacing-sm);
+}
+
+.tree-new-folder input {
+  flex: 1;
+  padding: 2px var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border-focus);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  outline: none;
+}

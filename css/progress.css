@@ -1,0 +1,115 @@
+/* ─── Progress Component ─── */
+.progress-container {
+  width: 100%;
+  max-width: 560px;
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-sm);
+}
+
+.progress-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-bright);
+}
+
+.progress-percentage {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 6px;
+  background: var(--color-progress-bg);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--color-progress-fill);
+  border-radius: 3px;
+  transition: width 150ms ease;
+  min-width: 0;
+}
+
+.progress-bar-fill.indeterminate {
+  width: 30% !important;
+  animation: progressIndeterminate 1.4s infinite ease-in-out;
+}
+
+@keyframes progressIndeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+.progress-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  gap: var(--spacing-md);
+}
+
+.progress-file-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-current-file {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  color: var(--color-text-muted);
+  direction: rtl;
+}
+
+.progress-elapsed {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ─── Scan Stage Layout ─── */
+.scan-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  width: 100%;
+  max-width: 560px;
+}
+
+.scan-folder-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.scan-folder-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.scan-folder-name {
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.scan-folder-name.completed {
+  color: var(--color-success);
+}
+
+.scan-folder-name.scanning {
+  color: var(--color-accent);
+}

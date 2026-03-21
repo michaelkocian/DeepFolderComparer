@@ -1,0 +1,153 @@
+/* ─── File Grid (thumbnails) ─── */
+.file-grid {
+  display: grid;
+  gap: var(--spacing-sm);
+  /* columns set dynamically via JS: grid-template-columns: repeat(N, 1fr) */
+  grid-template-columns: repeat(5, 1fr);
+}
+
+/* ─── File Tile ─── */
+.file-tile {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  cursor: default;
+  position: relative;
+}
+
+.file-tile:hover {
+  border-color: var(--color-border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.file-tile.selected {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.file-tile.dragging {
+  opacity: 0.5;
+}
+
+.file-tile[draggable="true"] {
+  cursor: grab;
+}
+
+.file-tile[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+/* ─── Thumbnail Area ─── */
+.file-tile .tile-thumbnail {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-tertiary);
+  overflow: hidden;
+  position: relative;
+}
+
+.file-tile .tile-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.file-tile .tile-thumbnail .file-type-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.file-tile .tile-thumbnail .file-type-icon.small {
+  width: 32px;
+  height: 32px;
+}
+
+/* Video overlay play icon */
+.file-tile .tile-thumbnail .video-indicator {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: var(--radius-round);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-tile .tile-thumbnail .video-indicator svg {
+  width: 10px;
+  height: 10px;
+  color: white;
+}
+
+/* ─── Tile Info ─── */
+.file-tile .tile-info {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 0;
+}
+
+.file-tile .tile-name {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.file-tile .tile-meta {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Selection overlay ─── */
+.file-tile .selection-checkbox {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  cursor: pointer;
+  z-index: 2;
+}
+
+.file-tile:hover .selection-checkbox,
+.file-tile.selected .selection-checkbox {
+  opacity: 1;
+}
+
+.file-tile.selected .selection-checkbox {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.file-tile.selected .selection-checkbox svg {
+  width: 12px;
+  height: 12px;
+  color: white;
+}

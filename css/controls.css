@@ -1,0 +1,279 @@
+/* ─── Controls: Buttons ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
+  outline: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  color: var(--color-text-bright);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--color-bg-input);
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-icon {
+  padding: var(--spacing-xs);
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.btn-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-lg {
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: var(--font-size-lg);
+}
+
+.btn-sm {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+/* ─── Checkboxes ─── */
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+  user-select: none;
+}
+
+.checkbox-label:hover {
+  background: var(--color-bg-hover);
+}
+
+.checkbox-label input[type="checkbox"] {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-input);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.checkbox-label input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-label input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 1px;
+}
+
+.checkbox-label .label-text {
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+}
+
+.checkbox-label .label-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-left: auto;
+}
+
+/* ─── Radio Buttons ─── */
+.radio-group {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  user-select: none;
+}
+
+.radio-label:hover {
+  background: var(--color-bg-hover);
+}
+
+.radio-label.selected {
+  border-color: var(--color-accent);
+  background: var(--color-bg-active);
+}
+
+.radio-label input[type="radio"] {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-border-light);
+  border-radius: var(--radius-round);
+  background: var(--color-bg-input);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: border-color var(--transition-fast);
+}
+
+.radio-label input[type="radio"]:checked {
+  border-color: var(--color-accent);
+}
+
+.radio-label input[type="radio"]:checked::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--color-accent);
+  border-radius: var(--radius-round);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.radio-label .label-text {
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+}
+
+/* ─── Zoom Slider ─── */
+.zoom-control {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.zoom-control label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.zoom-control input[type="range"] {
+  width: 100px;
+  height: 4px;
+  appearance: none;
+  background: var(--color-bg-input);
+  border-radius: 2px;
+  outline: none;
+}
+
+.zoom-control input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--color-accent);
+  border-radius: var(--radius-round);
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.zoom-control input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.zoom-control .zoom-value {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  min-width: 20px;
+  text-align: center;
+}
+
+/* ─── Section heading ─── */
+.section-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-bright);
+  margin-bottom: var(--spacing-sm);
+}
+
+.section-description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+/* ─── Card ─── */
+.card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+}

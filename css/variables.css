@@ -1,0 +1,89 @@
+:root {
+  /* Color palette - dark theme inspired by VS Code */
+  --color-bg-primary: #1e1e1e;
+  --color-bg-secondary: #252526;
+  --color-bg-tertiary: #2d2d30;
+  --color-bg-hover: #383838;
+  --color-bg-active: #094771;
+  --color-bg-input: #3c3c3c;
+  --color-bg-panel: #1e1e1e;
+  --color-bg-header: #323233;
+  --color-bg-overlay: rgba(0, 0, 0, 0.5);
+
+  --color-text-primary: #cccccc;
+  --color-text-secondary: #969696;
+  --color-text-muted: #6e6e6e;
+  --color-text-bright: #ffffff;
+  --color-text-link: #3794ff;
+
+  --color-border: #3c3c3c;
+  --color-border-light: #4a4a4a;
+  --color-border-focus: #007acc;
+
+  --color-accent: #007acc;
+  --color-accent-hover: #1a8ad4;
+  --color-accent-dark: #005a9e;
+
+  --color-success: #4caf50;
+  --color-success-bg: #1b3a1b;
+  --color-warning: #ff9800;
+  --color-warning-bg: #3a2e1b;
+  --color-error: #f44336;
+  --color-error-bg: #3a1b1b;
+  --color-info: #2196f3;
+  --color-info-bg: #1b2a3a;
+
+  /* Progress bar */
+  --color-progress-bg: #3c3c3c;
+  --color-progress-fill: #007acc;
+  --color-progress-text: #ffffff;
+
+  /* Drag and drop */
+  --color-drag-ghost: rgba(0, 122, 204, 0.3);
+  --color-drop-zone: rgba(76, 175, 80, 0.2);
+  --color-drop-zone-border: #4caf50;
+  --color-drop-invalid: rgba(244, 67, 54, 0.2);
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-xxl: 32px;
+
+  /* Border radius */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-round: 50%;
+
+  /* Font stack */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 16px;
+  --font-size-xxl: 20px;
+  --font-size-title: 24px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  /* Transitions */
+  --transition-fast: 120ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease-out;
+
+  /* Z-indices */
+  --z-panel: 1;
+  --z-tree: 2;
+  --z-header: 10;
+  --z-drag: 100;
+  --z-toast: 1000;
+  --z-overlay: 900;
+}

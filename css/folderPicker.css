@@ -1,0 +1,142 @@
+/* ─── Folder Picker Stage ─── */
+.folder-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  width: 100%;
+  max-width: 600px;
+}
+
+.folder-picker .picker-intro {
+  text-align: center;
+}
+
+.folder-picker .picker-intro h2 {
+  font-size: var(--font-size-title);
+  color: var(--color-text-bright);
+  margin-bottom: var(--spacing-sm);
+}
+
+.folder-picker .picker-intro p {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+}
+
+.folder-slot {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  border: 1px dashed var(--color-border-light);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.folder-slot.selected {
+  border-style: solid;
+  border-color: var(--color-success);
+}
+
+.folder-slot .slot-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+}
+
+.folder-slot .slot-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.folder-slot.selected .slot-icon {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.folder-slot .slot-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.folder-slot .slot-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.folder-slot .slot-path {
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-slot .slot-path.empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.picker-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-md);
+}
+
+/* ─── Comparison Config Stage ─── */
+.comparison-config {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.comparison-config .config-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.config-section .config-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+}
+
+.config-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+/* ─── Unsupported Browser warning ─── */
+.unsupported-warning {
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  text-align: center;
+  max-width: 500px;
+}
+
+.unsupported-warning h3 {
+  color: var(--color-error);
+  margin-bottom: var(--spacing-sm);
+}
+
+.unsupported-warning p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+}
