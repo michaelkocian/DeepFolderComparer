@@ -50,10 +50,19 @@ export function createProgressComponent(container) {
     },
 
     update({ processed, total, currentFile }) {
-      const percent = total > 0 ? Math.round((processed / total) * 100) : 0;
-      percentageElement.textContent = `${percent}%`;
-      fillElement.style.width = `${percent}%`;
-      fileCountElement.textContent = `${processed.toLocaleString()} / ${total.toLocaleString()} files`;
+      if (total > 0) {
+        const percent = Math.round((processed / total) * 100);
+        percentageElement.textContent = `${percent}%`;
+        fillElement.style.width = `${percent}%`;
+        fillElement.classList.remove('indeterminate');
+        fileCountElement.textContent = `${processed.toLocaleString()} / ${total.toLocaleString()} files`;
+      } else {
+        percentageElement.textContent = '';
+        fillElement.classList.add('indeterminate');
+        fileCountElement.textContent = processed > 0
+          ? `${processed.toLocaleString()} files counted`
+          : '';
+      }
       if (currentFile !== undefined) {
         currentFileElement.textContent = currentFile;
       }

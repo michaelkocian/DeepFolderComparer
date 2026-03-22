@@ -6,12 +6,12 @@
 import { getState, setState } from './state.js';
 
 const METHODS = [
-  { key: 'nameCompare', label: 'Name', hint: 'Filename match', defaultOn: true },
-  { key: 'sizeCompare', label: 'Size', hint: 'File size in bytes', defaultOn: true },
+  { key: 'sizeCompare', label: 'Size', hint: 'File size in bytes (always on)', defaultOn: true, locked: true },
+  { key: 'nameCompare', label: 'Name', hint: 'Filename match', defaultOn: false },
   { key: 'dateCompare', label: 'Date Modified', hint: 'Last modified timestamp', defaultOn: false },
   { key: 'pathCompare', label: 'Relative Path', hint: 'Full path within folder', defaultOn: false },
   { key: 'extensionCompare', label: 'Extension / MIME', hint: 'File type matching', defaultOn: false },
-  { key: 'chunkProbe', label: 'Chunk Probe', hint: 'First, middle & last 4 KB', defaultOn: false },
+  { key: 'chunkProbe', label: 'Chunk Probe', hint: 'First, middle & last 4 KB', defaultOn: true },
   { key: 'hashCompare', label: 'SHA-256 Hash', hint: 'Full file hash (slow for large files)', defaultOn: false },
   { key: 'fullByteCompare', label: 'Full Byte Compare', hint: 'Bit-for-bit comparison (slowest)', defaultOn: false },
 ];
@@ -26,9 +26,10 @@ export function renderComparisonConfig(container, onStartCompare) {
         <div class="section-description">Select how files should be matched between source and destination.</div>
         <div class="config-columns">
           ${METHODS.map(method => `
-            <label class="checkbox-label">
+            <label class="checkbox-label${method.locked ? ' locked' : ''}">
               <input type="checkbox" data-method="${method.key}"
-                ${state.comparisonConfig.methods[method.key] ? 'checked' : ''}>
+                ${state.comparisonConfig.methods[method.key] || method.locked ? 'checked' : ''}
+                ${method.locked ? 'disabled' : ''}>
               <span class="label-text">${method.label}</span>
               <span class="label-hint">${method.hint}</span>
             </label>
@@ -67,9 +68,11 @@ export function renderComparisonConfig(container, onStartCompare) {
     </div>
   `;
 
-  // Wire up checkboxes
+  // Wire up checkboxes (skip locked methods)
   const checkboxes = container.querySelectorAll('input[type="checkbox"][data-method]');
   checkboxes.forEach(cb => {
+    const methodDef = METHODS.find(m => m.key === cb.dataset.method);
+    if (methodDef?.locked) return;
     cb.addEventListener('change', () => {
       const config = { ...getState().comparisonConfig };
       config.methods = { ...config.methods, [cb.dataset.method]: cb.checked };
@@ -104,4 +107,18 @@ export function renderComparisonConfig(container, onStartCompare) {
   }
 
   updateStartButton();
+}
+
+/** Lock or unlock all non-locked checkboxes and radio buttons in the config UI. */
+export function setConfigLocked(locked) {
+  const container = document.getElementById('comparisonConfigRoot');
+  if (!container) return;
+
+  container.querySelectorAll('input[type="checkbox"][data-method]').forEach(cb => {
+    const methodDef = METHODS.find(m => m.key === cb.dataset.method);
+    if (!methodDef?.locked) cb.disabled = locked;
+  });
+  container.querySelectorAll('input[type="radio"][name="comparisonMode"]').forEach(radio => {
+    radio.disabled = locked;
+  });
 }

@@ -27,12 +27,12 @@ const state = {
   /** @type {Object} comparison configuration */
   comparisonConfig: {
     methods: {
-      nameCompare: true,
+      nameCompare: false,
       pathCompare: false,
       sizeCompare: true,
       dateCompare: false,
       extensionCompare: false,
-      chunkProbe: false,
+      chunkProbe: true,
       hashCompare: false,
       fullByteCompare: false,
     },

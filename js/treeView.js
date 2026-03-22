@@ -1,10 +1,18 @@
 /**
  * Collapsible folder tree component.
  * Builds a tree from a flat file list, supports expand/collapse, selection.
- * Right panel tree supports "New Folder" creation on disk.
+ * Tracks expanded state across re-renders via a persistent Set.
  */
 
 import { icons } from './icons.js';
+
+/**
+ * Create a persistent expanded-state tracker for a tree panel.
+ * @returns {Set<string>} set of expanded folder paths
+ */
+export function createExpandedState() {
+  return new Set(['']);
+}
 
 /**
  * Build a tree structure from a flat list of file info objects.
@@ -37,7 +45,6 @@ export function buildFolderTree(files) {
     current.files.push(file);
   }
 
-  // Compute fileCount recursively
   computeFileCount(root);
   return root;
 }
@@ -56,10 +63,20 @@ function computeFileCount(node) {
  * @param {object} tree - root node from buildFolderTree
  * @param {function} onSelectFolder - callback(path)
  * @param {string} selectedPath - currently selected folder path
- * @param {object} options - { allowNewFolder, directoryHandle }
+ * @param {object} options - { allowNewFolder, onNewFolder, expandedPaths }
  */
 export function renderTree(container, tree, onSelectFolder, selectedPath, options = {}) {
   container.innerHTML = '';
+  const expandedPaths = options.expandedPaths || new Set();
+
+  // Auto-expand ancestors of selectedPath
+  if (selectedPath) {
+    const parts = selectedPath.split('/');
+    for (let i = 1; i <= parts.length; i++) {
+      expandedPaths.add(parts.slice(0, i).join('/'));
+    }
+  }
+  expandedPaths.add('');
 
   const header = document.createElement('div');
   header.className = 'tree-sidebar-header';
@@ -90,20 +107,20 @@ export function renderTree(container, tree, onSelectFolder, selectedPath, option
   rootList.className = 'tree-list';
 
   // Root item
-  const rootItem = createTreeItem(tree, '(root)', onSelectFolder, selectedPath === '', options);
+  const rootItem = createTreeItem(tree, '(root)', onSelectFolder, selectedPath === '', expandedPaths);
   rootList.appendChild(rootItem);
 
   // Sort children alphabetically
   const sortedChildren = [...tree.children.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   for (const [, child] of sortedChildren) {
-    renderTreeNode(rootList, child, onSelectFolder, selectedPath, options);
+    renderTreeNode(rootList, child, onSelectFolder, selectedPath, expandedPaths);
   }
 
   treeListContainer.appendChild(rootList);
 }
 
-function renderTreeNode(parentList, node, onSelectFolder, selectedPath, options) {
-  const item = createTreeItem(node, node.name, onSelectFolder, selectedPath === node.path, options);
+function renderTreeNode(parentList, node, onSelectFolder, selectedPath, expandedPaths) {
+  const item = createTreeItem(node, node.name, onSelectFolder, selectedPath === node.path, expandedPaths);
   parentList.appendChild(item);
 
   if (node.children.size > 0) {
@@ -112,27 +129,29 @@ function renderTreeNode(parentList, node, onSelectFolder, selectedPath, options)
 
     const sortedChildren = [...node.children.entries()].sort((a, b) => a[0].localeCompare(b[0]));
     for (const [, child] of sortedChildren) {
-      renderTreeNode(childList, child, onSelectFolder, selectedPath, options);
+      renderTreeNode(childList, child, onSelectFolder, selectedPath, expandedPaths);
     }
 
     item.appendChild(childList);
   }
 }
 
-function createTreeItem(node, displayName, onSelectFolder, isSelected, options) {
+function createTreeItem(node, displayName, onSelectFolder, isSelected, expandedPaths) {
+  const hasChildren = node.children.size > 0;
+  const isExpanded = expandedPaths.has(node.path);
+
   const li = document.createElement('li');
   li.className = 'tree-item';
-  if (isSelected) li.classList.add('expanded');
+  if (isExpanded) li.classList.add('expanded');
 
   const row = document.createElement('div');
   row.className = 'tree-item-row';
   if (isSelected) row.classList.add('selected');
   row.dataset.folderPath = node.path;
 
-  const hasChildren = node.children.size > 0;
-
   const expandIcon = document.createElement('span');
   expandIcon.className = `tree-expand ${hasChildren ? '' : 'empty'}`;
+  if (isExpanded && hasChildren) expandIcon.classList.add('expanded');
   expandIcon.innerHTML = icons.chevronRight;
 
   const folderIcon = document.createElement('span');
@@ -152,39 +171,42 @@ function createTreeItem(node, displayName, onSelectFolder, isSelected, options) 
   row.appendChild(label);
   row.appendChild(badge);
 
-  // Click to select
-  row.addEventListener('click', (e) => {
-    e.stopPropagation();
-    onSelectFolder(node.path);
-  });
-
-  // Click expand chevron to toggle
+  // Chevron click: toggle expand only (no navigation)
   expandIcon.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (hasChildren) {
-      li.classList.toggle('expanded');
-      expandIcon.classList.toggle('expanded');
+    if (!hasChildren) return;
+    const nowExpanded = !li.classList.contains('expanded');
+    li.classList.toggle('expanded');
+    expandIcon.classList.toggle('expanded');
+    if (nowExpanded) {
+      expandedPaths.add(node.path);
+    } else {
+      expandedPaths.delete(node.path);
     }
+  });
+
+  // Row click: select folder (navigate)
+  row.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (hasChildren) expandedPaths.add(node.path);
     onSelectFolder(node.path);
   });
 
-  // Double-click to expand
+  // Double-click: toggle expand without navigate
   row.addEventListener('dblclick', (e) => {
     e.stopPropagation();
-    if (hasChildren) {
-      li.classList.toggle('expanded');
-      expandIcon.classList.toggle('expanded');
+    if (!hasChildren) return;
+    const nowExpanded = !li.classList.contains('expanded');
+    li.classList.toggle('expanded');
+    expandIcon.classList.toggle('expanded');
+    if (nowExpanded) {
+      expandedPaths.add(node.path);
+    } else {
+      expandedPaths.delete(node.path);
     }
   });
 
   li.appendChild(row);
-
-  // If this node's path is a prefix of selectedPath, auto-expand
-  if (!isSelected && options._selectedPath && options._selectedPath.startsWith(node.path + '/')) {
-    li.classList.add('expanded');
-    expandIcon.classList.add('expanded');
-  }
-
   return li;
 }
 

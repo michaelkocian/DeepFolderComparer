@@ -260,6 +260,56 @@
   width: 70px;
 }
 
+/* ─── Locked checkbox ─── */
+.checkbox-label.locked {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.checkbox-label.locked input[type="checkbox"]:disabled {
+  opacity: 1;
+}
+
+/* ─── Compact checkbox for panel headers ─── */
+.checkbox-label.compact {
+  padding: 0 var(--spacing-xs);
+  gap: var(--spacing-xs);
+  margin: 0;
+}
+
+.checkbox-label.compact .label-text {
+  font-size: var(--font-size-sm);
+}
+
+/* ─── Panel separator ─── */
+.panel-separator {
+  width: 1px;
+  height: 16px;
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
+/* ─── Compare progress row ─── */
+.compare-progress-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.compare-progress-row .compare-progress-inner {
+  flex: 1;
+}
+
+.cancel-compare-btn {
+  margin-top: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.cancel-compare-btn:hover {
+  color: var(--color-error) !important;
+  background: var(--color-error-bg) !important;
+}
+
 /* ─── Subfolder Toggle ─── */
 .subfolder-toggle.active {
   color: var(--color-accent) !important;

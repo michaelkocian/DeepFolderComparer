@@ -7,6 +7,16 @@
 let worker = null;
 let workerRequestId = 0;
 const pendingWorkerRequests = new Map();
+let cancelRequested = false;
+
+/** Signal the comparison loop to stop and abort pending worker requests. */
+export function cancelComparison() {
+  cancelRequested = true;
+  for (const [id, pending] of pendingWorkerRequests) {
+    pending.reject(new Error('Comparison cancelled'));
+  }
+  pendingWorkerRequests.clear();
+}
 
 function getWorker() {
   if (!worker) {
@@ -41,6 +51,11 @@ function workerRequest(type, data) {
  * Short-circuits on first method that says they differ.
  */
 async function areFilesEqual(sourceFile, destFile, methods) {
+  // Size compare — first priority (fastest metadata filter)
+  if (methods.sizeCompare) {
+    if (sourceFile.size !== destFile.size) return false;
+  }
+
   // Name compare
   if (methods.nameCompare) {
     if (sourceFile.name !== destFile.name) return false;
@@ -50,11 +65,6 @@ async function areFilesEqual(sourceFile, destFile, methods) {
   if (methods.extensionCompare) {
     if (sourceFile.extension !== destFile.extension) return false;
     if (sourceFile.type !== destFile.type) return false;
-  }
-
-  // Size compare
-  if (methods.sizeCompare) {
-    if (sourceFile.size !== destFile.size) return false;
   }
 
   // Date compare
@@ -142,19 +152,23 @@ async function areFilesEqual(sourceFile, destFile, methods) {
 function buildDestLookup(destFiles) {
   const byName = new Map();
   const byPath = new Map();
+  const bySize = new Map();
 
   for (const file of destFiles) {
-    // By name
     if (!byName.has(file.name)) {
       byName.set(file.name, []);
     }
     byName.get(file.name).push(file);
 
-    // By relative path
     byPath.set(file.relativePath, file);
+
+    if (!bySize.has(file.size)) {
+      bySize.set(file.size, []);
+    }
+    bySize.get(file.size).push(file);
   }
 
-  return { byName, byPath };
+  return { byName, byPath, bySize };
 }
 
 /**
@@ -170,8 +184,14 @@ export async function compareFiles(sourceFiles, destFiles, config, onProgress) {
   const missing = [];
   const total = sourceFiles.length;
   const lookup = buildDestLookup(destFiles);
+  cancelRequested = false;
 
   for (let i = 0; i < sourceFiles.length; i++) {
+    if (cancelRequested) {
+      cancelRequested = false;
+      throw new Error('Comparison cancelled');
+    }
+
     const sourceFile = sourceFiles[i];
 
     if (i % 10 === 0 || i === total - 1) {
@@ -182,17 +202,24 @@ export async function compareFiles(sourceFiles, destFiles, config, onProgress) {
       });
     }
 
+    // Yield to event loop periodically to keep UI responsive
+    if (i % 50 === 0) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+
     let found = false;
 
     if (mode === 'folderByFolder') {
-      // Look for exact path match first, then fall back to name match in same folder
       const exactMatch = lookup.byPath.get(sourceFile.relativePath);
       if (exactMatch) {
         found = await areFilesEqual(sourceFile, exactMatch, methods);
-      } else {
-        // Check same folder by name
-        const candidates = lookup.byName.get(sourceFile.name) || [];
-        for (const candidate of candidates) {
+      }
+      if (!found) {
+        // Use name index when name compare is on, otherwise use size index
+        const pool = methods.nameCompare
+          ? lookup.byName.get(sourceFile.name) || []
+          : lookup.bySize.get(sourceFile.size) || [];
+        for (const candidate of pool) {
           if (candidate.parentPath === sourceFile.parentPath) {
             if (await areFilesEqual(sourceFile, candidate, methods)) {
               found = true;
@@ -202,25 +229,15 @@ export async function compareFiles(sourceFiles, destFiles, config, onProgress) {
         }
       }
     } else {
-      // Deep scan: search all dest files for a match
-      const candidates = lookup.byName.get(sourceFile.name) || [];
+      // Deep scan: use name index when available, otherwise size index
+      const candidates = methods.nameCompare
+        ? lookup.byName.get(sourceFile.name) || []
+        : lookup.bySize.get(sourceFile.size) || [];
 
-      if (candidates.length > 0) {
-        for (const candidate of candidates) {
-          if (await areFilesEqual(sourceFile, candidate, methods)) {
-            found = true;
-            break;
-          }
-        }
-      }
-
-      // If name compare is off, we need to check all files
-      if (!found && !methods.nameCompare) {
-        for (const destFile of destFiles) {
-          if (await areFilesEqual(sourceFile, destFile, methods)) {
-            found = true;
-            break;
-          }
+      for (const candidate of candidates) {
+        if (await areFilesEqual(sourceFile, candidate, methods)) {
+          found = true;
+          break;
         }
       }
     }

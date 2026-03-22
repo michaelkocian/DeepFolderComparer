@@ -7,8 +7,8 @@ import { getState, setState } from './state.js';
 import { renderFolderPicker } from './folderPicker.js';
 import { scanDirectory } from './scanner.js';
 import { createProgressComponent } from './progress.js';
-import { renderComparisonConfig } from './comparisonConfig.js';
-import { compareFiles, terminateWorker } from './comparator.js';
+import { renderComparisonConfig, setConfigLocked } from './comparisonConfig.js';
+import { compareFiles, terminateWorker, cancelComparison } from './comparator.js';
 import { initLeftPanel, initRightPanel } from './panelView.js';
 import { initDragDrop } from './dragDrop.js';
 import { showError, showSuccess, showInfo } from './toast.js';
@@ -127,14 +127,29 @@ async function runComparison() {
   const state = getState();
   const configRoot = document.getElementById('comparisonConfigRoot');
   const progressRoot = configRoot.querySelector('#compareProgressRoot');
+
+  // Build progress area with cancel button
   progressRoot.style.display = 'block';
+  progressRoot.innerHTML = `
+    <div class="compare-progress-row">
+      <div class="compare-progress-inner"></div>
+      <button class="btn-icon cancel-compare-btn" title="Cancel comparison">${icons.close}</button>
+    </div>
+  `;
+
+  const progressInner = progressRoot.querySelector('.compare-progress-inner');
+  progressRoot.querySelector('.cancel-compare-btn')
+    .addEventListener('click', () => cancelComparison());
 
   // Disable the start button
   const btnStart = configRoot.querySelector('#btnStartCompare');
   btnStart.disabled = true;
   btnStart.textContent = 'Comparing…';
 
-  const progress = createProgressComponent(progressRoot);
+  // Lock config inputs during comparison
+  setConfigLocked(true);
+
+  const progress = createProgressComponent(progressInner);
   progress.start('Comparing files…');
 
   try {
@@ -155,7 +170,7 @@ async function runComparison() {
       btnStart.disabled = false;
       btnStart.textContent = 'Start Comparing';
       progressRoot.style.display = 'none';
-      compareRunning = false;
+      setConfigLocked(false);
       return;
     }
 
@@ -165,10 +180,16 @@ async function runComparison() {
     showStage('results');
     initResultsView();
   } catch (err) {
-    showError(`Comparison failed: ${err.message}`);
+    terminateWorker();
+    if (err.message === 'Comparison cancelled') {
+      showInfo('Comparison cancelled');
+    } else {
+      showError(`Comparison failed: ${err.message}`);
+    }
     btnStart.disabled = false;
     btnStart.textContent = 'Start Comparing';
     progressRoot.style.display = 'none';
+    setConfigLocked(false);
   } finally {
     compareRunning = false;
   }
@@ -182,7 +203,7 @@ function initResultsView() {
   renderToolbar(state);
 
   // Init panels
-  const leftPanel = initLeftPanel(state.missingFiles);
+  const leftPanel = initLeftPanel(state.missingFiles, state.sourceFiles);
   const rightPanel = initRightPanel(state.destFiles, state.destHandle);
 
   // Init drag-and-drop
@@ -211,6 +232,11 @@ function renderToolbar(state) {
   // Back button
   toolbar.querySelector('#btnBackToSetup').addEventListener('click', () => {
     showStage('setup');
+    // Re-render comparison config so the button and progress are reset
+    renderComparisonConfig(
+      document.getElementById('comparisonConfigRoot'),
+      () => runComparison()
+    );
   });
 }
 

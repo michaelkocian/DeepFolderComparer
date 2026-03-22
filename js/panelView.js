@@ -7,7 +7,7 @@ import { getFileCategory, formatFileSize, formatDate } from './fileInfo.js';
 import { getFileIcon, createThumbnailObserver } from './thumbnailGenerator.js';
 import { icons } from './icons.js';
 import { getState, setState } from './state.js';
-import { buildFolderTree, renderTree, getFilesAtPath, getAllFilesUnderPath } from './treeView.js';
+import { buildFolderTree, renderTree, getFilesAtPath, getAllFilesUnderPath, createExpandedState } from './treeView.js';
 
 /**
  * Render files into a grid.
@@ -156,9 +156,18 @@ export function renderBreadcrumb(container, folderPath, onNavigate) {
  */
 function renderPanelHeaderControls(containerId, options) {
   const container = document.getElementById(containerId);
-  const { zoom, onZoom, onToggleSubfolders } = options;
+  const { zoom, onZoom, onToggleSubfolders, onToggleShowAll } = options;
+
+  const showAllHtml = onToggleShowAll ? `
+    <label class="checkbox-label compact" title="Show all source files, not just missing">
+      <input type="checkbox" class="show-all-toggle">
+      <span class="label-text">All</span>
+    </label>
+    <span class="panel-separator"></span>
+  ` : '';
 
   container.innerHTML = `
+    ${showAllHtml}
     <button class="btn-icon subfolder-toggle" title="Show all files in subfolders">
       ${icons.layers}
     </button>
@@ -167,6 +176,11 @@ function renderPanelHeaderControls(containerId, options) {
       <span class="zoom-value">${zoom}</span>
     </div>
   `;
+
+  if (onToggleShowAll) {
+    const showAllCb = container.querySelector('.show-all-toggle');
+    showAllCb.addEventListener('change', () => onToggleShowAll(showAllCb.checked));
+  }
 
   let subfolderActive = false;
   const toggleBtn = container.querySelector('.subfolder-toggle');
@@ -188,9 +202,12 @@ function renderPanelHeaderControls(containerId, options) {
 /**
  * Initialize the full left panel (missing files).
  */
-export function initLeftPanel(missingFiles) {
+export function initLeftPanel(missingFiles, sourceFiles) {
   const state = getState();
-  const tree = buildFolderTree(missingFiles);
+  const expandedPaths = createExpandedState();
+  let showAllFiles = false;
+  let activeFiles = missingFiles;
+  let tree = buildFolderTree(activeFiles);
   let currentPath = state.leftSelectedPath;
   let currentObserver = null;
   let currentZoom = state.zoomLeft;
@@ -201,6 +218,14 @@ export function initLeftPanel(missingFiles) {
     zoom: currentZoom,
     onZoom(z) { currentZoom = z; setState({ zoomLeft: z }); refresh(); },
     onToggleSubfolders(active) { showSubfolders = active; refresh(); },
+    onToggleShowAll(showAll) {
+      showAllFiles = showAll;
+      activeFiles = showAll ? sourceFiles : missingFiles;
+      tree = buildFolderTree(activeFiles);
+      currentPath = '';
+      setState({ leftSelectedPath: '' });
+      refresh();
+    },
   });
 
   function refresh() {
@@ -208,12 +233,19 @@ export function initLeftPanel(missingFiles) {
       ? getAllFilesUnderPath(tree, currentPath)
       : getFilesAtPath(tree, currentPath);
 
+    // Update panel title
+    const titleEl = document.querySelector('#panelLeft .panel-title');
+    if (titleEl) {
+      titleEl.textContent = showAllFiles ? 'All Source Files' : 'Missing Files (Source)';
+    }
+
     // Tree
     renderTree(
       document.getElementById('treeLeft'),
       tree,
       (path) => { currentPath = path; setState({ leftSelectedPath: path }); refresh(); },
-      currentPath
+      currentPath,
+      { expandedPaths }
     );
 
     // Breadcrumb
@@ -228,12 +260,12 @@ export function initLeftPanel(missingFiles) {
     const result = renderFileGrid(
       document.getElementById('fileGridLeft'),
       files,
-      { draggable: true, zoom: currentZoom }
+      { draggable: !showAllFiles, zoom: currentZoom }
     );
     currentObserver = result.observer;
 
     // Badge
-    document.getElementById('missingCount').textContent = missingFiles.length;
+    document.getElementById('missingCount').textContent = activeFiles.length;
   }
 
   refresh();
@@ -250,6 +282,7 @@ export function initLeftPanel(missingFiles) {
  */
 export function initRightPanel(destFiles, destHandle) {
   const state = getState();
+  const expandedPaths = createExpandedState();
   let tree = buildFolderTree(destFiles);
   let currentPath = state.rightSelectedPath;
   let currentObserver = null;
@@ -278,6 +311,7 @@ export function initRightPanel(destFiles, destHandle) {
       {
         allowNewFolder: true,
         onNewFolder: handleNewFolder,
+        expandedPaths,
       }
     );
 

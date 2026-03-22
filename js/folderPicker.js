@@ -66,7 +66,7 @@ export function renderFolderPicker(container, { onStartScan } = {}) {
 
   async function pickFolder(which) {
     try {
-      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      const handle = await window.showDirectoryPicker({ mode: 'read' });
 
       if (which === 'source') {
         setState({ sourceHandle: handle, sourceName: handle.name });

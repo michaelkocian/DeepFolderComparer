@@ -6,20 +6,19 @@
 import { createFileInfo } from './fileInfo.js';
 
 /**
- * Count total files in a directory tree (fast first pass).
+ * Count total files in a directory tree (fast first pass with live updates).
  * @param {FileSystemDirectoryHandle} dirHandle
- * @returns {Promise<number>}
+ * @param {{ value: number, onCount: function }} counter - shared mutable counter
  */
-async function countFiles(dirHandle) {
-  let count = 0;
+async function countFiles(dirHandle, counter) {
   for await (const [, entryHandle] of dirHandle) {
     if (entryHandle.kind === 'file') {
-      count++;
+      counter.value++;
+      if (counter.value % 100 === 0) counter.onCount(counter.value);
     } else {
-      count += await countFiles(entryHandle);
+      await countFiles(entryHandle, counter);
     }
   }
-  return count;
 }
 
 /**
@@ -68,9 +67,16 @@ async function collectFiles(dirHandle, relativePath, onProgress, counter) {
  * @returns {Promise<import('./fileInfo.js').FileInfo[]>}
  */
 export async function scanDirectory(dirHandle, onProgress) {
-  // Pass 1: count
+  // Pass 1: count (with live progress)
+  const countCounter = {
+    value: 0,
+    onCount: (count) => {
+      onProgress({ processed: count, total: 0, currentFile: 'Counting files…' });
+    },
+  };
   onProgress({ processed: 0, total: 0, currentFile: 'Counting files…' });
-  const total = await countFiles(dirHandle);
+  await countFiles(dirHandle, countCounter);
+  const total = countCounter.value;
 
   // Pass 2: collect
   const counter = { processed: 0, total };
