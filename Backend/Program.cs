@@ -3,6 +3,7 @@ using DeepFolderComp.Backend.Services;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
 builder.Services.AddSingleton<FileSystemService>();
 builder.Services.AddSingleton<FileMoverService>();
@@ -88,5 +89,26 @@ app.MapGet("/api/file-exists", (string path) =>
     return Results.Ok(new { exists = File.Exists(path) });
 });
 
-Console.WriteLine($"Serving frontend from: {frontendPath}");
-app.Run("http://localhost:5000");
+// ─── Launch browser in app mode, exit when it closes ───
+var launcher = new BrowserLauncher();
+var appUrl = "http://localhost:5000";
+
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    if (launcher.Launch(appUrl))
+    {
+        Console.WriteLine($"App opened at {appUrl}");
+        Task.Run(() =>
+        {
+            launcher.WaitForExit();
+            Console.WriteLine("Browser closed — shutting down.");
+            app.StopAsync();
+        });
+    }
+    else
+    {
+        Console.WriteLine("No compatible browser found (Edge/Chrome/Brave required for app mode).");
+    }
+});
+
+app.Run(appUrl);
