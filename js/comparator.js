@@ -186,6 +186,8 @@ export async function compareFiles(sourceFiles, destFiles, config, onProgress) {
   const lookup = buildDestLookup(destFiles);
   cancelRequested = false;
 
+  const needsContent = methods.chunkProbe || methods.hashCompare || methods.fullByteCompare;
+
   for (let i = 0; i < sourceFiles.length; i++) {
     if (cancelRequested) {
       cancelRequested = false;
@@ -194,17 +196,28 @@ export async function compareFiles(sourceFiles, destFiles, config, onProgress) {
 
     const sourceFile = sourceFiles[i];
 
-    if (i % 10 === 0 || i === total - 1) {
-      onProgress({
-        processed: i + 1,
-        total,
-        currentFile: sourceFile.relativePath,
-      });
-    }
+    onProgress({
+      processed: i + 1,
+      total,
+      currentFile: sourceFile.relativePath,
+      comparingAgainst: null,
+    });
 
     // Yield to event loop periodically to keep UI responsive
     if (i % 50 === 0) {
       await new Promise(resolve => setTimeout(resolve, 0));
+    }
+
+    /** Report which candidate is being compared (only for slow content methods). */
+    function reportCandidate(candidate) {
+      if (needsContent) {
+        onProgress({
+          processed: i + 1,
+          total,
+          currentFile: sourceFile.relativePath,
+          comparingAgainst: candidate.relativePath,
+        });
+      }
     }
 
     let found = false;
@@ -212,6 +225,7 @@ export async function compareFiles(sourceFiles, destFiles, config, onProgress) {
     if (mode === 'folderByFolder') {
       const exactMatch = lookup.byPath.get(sourceFile.relativePath);
       if (exactMatch) {
+        reportCandidate(exactMatch);
         found = await areFilesEqual(sourceFile, exactMatch, methods);
       }
       if (!found) {
@@ -221,6 +235,7 @@ export async function compareFiles(sourceFiles, destFiles, config, onProgress) {
           : lookup.bySize.get(sourceFile.size) || [];
         for (const candidate of pool) {
           if (candidate.parentPath === sourceFile.parentPath) {
+            reportCandidate(candidate);
             if (await areFilesEqual(sourceFile, candidate, methods)) {
               found = true;
               break;
@@ -235,6 +250,7 @@ export async function compareFiles(sourceFiles, destFiles, config, onProgress) {
         : lookup.bySize.get(sourceFile.size) || [];
 
       for (const candidate of candidates) {
+        reportCandidate(candidate);
         if (await areFilesEqual(sourceFile, candidate, methods)) {
           found = true;
           break;

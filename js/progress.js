@@ -18,6 +18,7 @@ export function createProgressComponent(container) {
         <span class="progress-current-file"></span>
         <span class="progress-elapsed">0s</span>
       </div>
+      <div class="progress-comparing-against"></div>
     </div>
   `;
 
@@ -27,6 +28,7 @@ export function createProgressComponent(container) {
   const fileCountElement = container.querySelector('.progress-file-count');
   const currentFileElement = container.querySelector('.progress-current-file');
   const elapsedElement = container.querySelector('.progress-elapsed');
+  const comparingAgainstElement = container.querySelector('.progress-comparing-against');
 
   let startTime = Date.now();
   let elapsedTimerId = null;
@@ -49,7 +51,7 @@ export function createProgressComponent(container) {
       elapsedTimerId = setInterval(updateElapsed, 1000);
     },
 
-    update({ processed, total, currentFile }) {
+    update({ processed, total, currentFile, comparingAgainst }) {
       if (total > 0) {
         const percent = Math.round((processed / total) * 100);
         percentageElement.textContent = `${percent}%`;
@@ -66,6 +68,11 @@ export function createProgressComponent(container) {
       if (currentFile !== undefined) {
         currentFileElement.textContent = currentFile;
       }
+      if (comparingAgainst !== undefined) {
+        comparingAgainstElement.textContent = comparingAgainst
+          ? `↔ ${comparingAgainst}`
+          : '';
+      }
       updateElapsed();
     },
 
@@ -80,6 +87,7 @@ export function createProgressComponent(container) {
       percentageElement.textContent = '100%';
       fillElement.style.width = '100%';
       fillElement.classList.remove('indeterminate');
+      comparingAgainstElement.textContent = '';
       clearInterval(elapsedTimerId);
       updateElapsed();
     },
@@ -91,6 +99,7 @@ export function createProgressComponent(container) {
       fillElement.classList.remove('indeterminate');
       fileCountElement.textContent = '0 files';
       currentFileElement.textContent = '';
+      comparingAgainstElement.textContent = '';
       elapsedElement.textContent = '0s';
     },
   };

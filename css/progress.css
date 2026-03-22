@@ -80,6 +80,17 @@
   white-space: nowrap;
 }
 
+.progress-comparing-against {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  min-height: 1.2em;
+  margin-top: 2px;
+}
+
 /* ─── Scan Stage Layout ─── */
 .scan-status {
   display: flex;
