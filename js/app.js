@@ -28,6 +28,7 @@ const setupBottom = document.getElementById('setupBottom');
 function init() {
   renderFolderPicker(document.getElementById('folderPickerRoot'), {
     onStartScan: () => runScan(),
+    onFolderChange: () => setupBottom.classList.remove('visible'),
   });
 }
 

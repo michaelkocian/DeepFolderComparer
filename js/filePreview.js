@@ -7,11 +7,23 @@ import { getFileCategory, formatFileSize, formatDate } from './fileInfo.js';
 import { icons } from './icons.js';
 
 const MAX_TEXT_SIZE = 5 * 1024 * 1024; // 5 MB limit for text preview
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 10;
+const ZOOM_STEP = 0.15;
 
 let currentFiles = [];
 let currentIndex = 0;
 let currentBlobUrl = null;
 let modal = null;
+
+let zoomLevel = 1;
+let panX = 0;
+let panY = 0;
+let isPanning = false;
+let panStartX = 0;
+let panStartY = 0;
+let currentZoomTarget = null;
+let currentZoomWrapper = null;
 
 /** Open the preview modal for a file within a list of files. */
 export function openPreview(fileInfo, files) {
@@ -28,6 +40,7 @@ export function openPreview(fileInfo, files) {
 /** Close the preview modal and clean up resources. */
 export function closePreview() {
   if (!modal) return;
+  resetZoom();
   modal.classList.remove('active');
   document.body.style.overflow = '';
   revokeBlobUrl();
@@ -76,6 +89,7 @@ function handleKeydown(e) {
 
 function navigate(direction) {
   if (currentFiles.length <= 1) return;
+  resetZoom();
   currentIndex = (currentIndex + direction + currentFiles.length) % currentFiles.length;
   renderPreview(currentFiles[currentIndex]);
 }
@@ -147,7 +161,9 @@ async function buildImagePreview(fileInfo) {
   const img = document.createElement('img');
   img.src = url;
   img.alt = fileInfo.name;
+  img.draggable = false;
   wrapper.appendChild(img);
+  setupZoom(wrapper, img);
   return wrapper;
 }
 
@@ -159,9 +175,8 @@ async function buildVideoPreview(fileInfo) {
   video.src = url;
   video.controls = true;
   video.autoplay = true;
-  video.style.maxWidth = '100%';
-  video.style.maxHeight = '100%';
   wrapper.appendChild(video);
+  setupZoom(wrapper, video);
   return wrapper;
 }
 
@@ -231,6 +246,106 @@ function buildFallbackPreview(fileInfo, message) {
     ${message ? `<div class="preview-fallback-message">${escapeHtml(message)}</div>` : ''}
   `;
   return wrapper;
+}
+
+/** Attach mouse-wheel zoom and click-drag pan to a media element. */
+function setupZoom(wrapper, mediaEl) {
+  resetZoom();
+  currentZoomWrapper = wrapper;
+  currentZoomTarget = mediaEl;
+
+  wrapper.addEventListener('wheel', onZoomWheel, { passive: false });
+  wrapper.addEventListener('mousedown', onPanStart);
+  wrapper.addEventListener('dblclick', onZoomReset);
+}
+
+function onZoomWheel(e) {
+  e.preventDefault();
+  const direction = e.deltaY < 0 ? 1 : -1;
+  const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomLevel * (1 + direction * ZOOM_STEP)));
+
+  if (newZoom <= ZOOM_MIN) {
+    zoomLevel = 1;
+    panX = 0;
+    panY = 0;
+    applyTransform();
+    return;
+  }
+
+  // Zoom toward cursor position within the wrapper
+  const rect = currentZoomWrapper.getBoundingClientRect();
+  const cursorX = e.clientX - rect.left;
+  const cursorY = e.clientY - rect.top;
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
+
+  const ratio = newZoom / zoomLevel;
+  panX = cursorX - ratio * (cursorX - panX - centerX) - centerX;
+  panY = cursorY - ratio * (cursorY - panY - centerY) - centerY;
+  zoomLevel = newZoom;
+
+  clampPan();
+  applyTransform();
+}
+
+function onPanStart(e) {
+  if (zoomLevel <= ZOOM_MIN || e.button !== 0) return;
+  isPanning = true;
+  panStartX = e.clientX - panX;
+  panStartY = e.clientY - panY;
+  currentZoomWrapper.classList.add('panning');
+
+  const onMove = (ev) => {
+    if (!isPanning) return;
+    panX = ev.clientX - panStartX;
+    panY = ev.clientY - panStartY;
+    clampPan();
+    applyTransform();
+  };
+
+  const onUp = () => {
+    isPanning = false;
+    currentZoomWrapper?.classList.remove('panning');
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+  };
+
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+}
+
+function onZoomReset() {
+  resetZoom();
+  applyTransform();
+}
+
+function clampPan() {
+  if (!currentZoomWrapper) return;
+  const rect = currentZoomWrapper.getBoundingClientRect();
+  const maxPanX = (rect.width * (zoomLevel - 1)) / 2;
+  const maxPanY = (rect.height * (zoomLevel - 1)) / 2;
+  panX = Math.min(maxPanX, Math.max(-maxPanX, panX));
+  panY = Math.min(maxPanY, Math.max(-maxPanY, panY));
+}
+
+function applyTransform() {
+  if (!currentZoomTarget) return;
+  currentZoomTarget.style.transform =
+    zoomLevel <= ZOOM_MIN
+      ? ''
+      : `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+  currentZoomWrapper?.classList.toggle('zoomed', zoomLevel > ZOOM_MIN);
+}
+
+function resetZoom() {
+  zoomLevel = 1;
+  panX = 0;
+  panY = 0;
+  isPanning = false;
+  if (currentZoomTarget) currentZoomTarget.style.transform = '';
+  if (currentZoomWrapper) currentZoomWrapper.classList.remove('zoomed', 'panning');
+  currentZoomTarget = null;
+  currentZoomWrapper = null;
 }
 
 function escapeHtml(text) {

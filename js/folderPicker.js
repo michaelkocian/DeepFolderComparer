@@ -7,7 +7,7 @@ import { getState, setState } from './state.js';
 import { icons } from './icons.js';
 import { showError } from './toast.js';
 
-export function renderFolderPicker(container, { onStartScan } = {}) {
+export function renderFolderPicker(container, { onStartScan, onFolderChange } = {}) {
   if (!('showDirectoryPicker' in window)) {
     container.innerHTML = `
       <div class="unsupported-warning">
@@ -78,6 +78,7 @@ export function renderFolderPicker(container, { onStartScan } = {}) {
 
       const updated = getState();
       btnStartScan.disabled = !(updated.sourceHandle && updated.destHandle);
+      if (onFolderChange) onFolderChange();
     } catch (err) {
       if (err.name !== 'AbortError') {
         showError(`Failed to select folder: ${err.message}`);
