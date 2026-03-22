@@ -63,11 +63,12 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
           gh release create "${{ steps.version.outputs.tag }}" \
             "publish/DeepFolderComp-${{ steps.version.outputs.tag }}.exe" \
             --title "DeepFolderComp ${{ steps.version.outputs.tag }}" \
             --generate-notes \
             --notes "**How to use:**
-          1. Download `DeepFolderComp-${{ steps.version.outputs.tag }}.exe`
+          1. Download \`DeepFolderComp-${{ steps.version.outputs.tag }}.exe\`
           2. Run it — the app opens in your browser automatically"
