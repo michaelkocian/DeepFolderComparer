@@ -69,5 +69,5 @@ jobs:
           --title "DeepFolderComp ${{ steps.version.outputs.tag }}"
           --generate-notes
           --notes "**How to use:**
-          1. Download \`DeepFolderComp-${{ steps.version.outputs.tag }}.exe\`
-          2. Run it — the app opens in your browser automatically"
+          \n1. Download **DeepFolderComp-${{ steps.version.outputs.tag }}.exe**
+          \n2. Run it — the app opens in your browser automatically"
