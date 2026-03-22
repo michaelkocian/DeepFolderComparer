@@ -10,9 +10,13 @@ builder.Services.AddSingleton<FileMoverService>();
 
 var app = builder.Build();
 
-// ─── Static file serving (frontend from parent directory) ───
+// ─── Static file serving (physical in dev, embedded in published exe) ───
 var frontendPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, ".."));
-var fileProvider = new PhysicalFileProvider(frontendPath);
+var hasPhysicalFrontend = File.Exists(Path.Combine(frontendPath, "index.html"));
+
+IFileProvider fileProvider = hasPhysicalFrontend
+    ? new PhysicalFileProvider(frontendPath)
+    : new ManifestEmbeddedFileProvider(typeof(Program).Assembly, "wwwroot");
 
 app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = fileProvider });
 app.UseStaticFiles(new StaticFileOptions { FileProvider = fileProvider });

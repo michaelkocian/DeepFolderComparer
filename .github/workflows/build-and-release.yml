@@ -1,0 +1,75 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore DeepFolderComp.slnx
+
+      - name: Build solution
+        run: dotnet build DeepFolderComp.slnx -c Release --no-restore
+
+      - name: Run tests
+        run: dotnet test DeepFolderComp.slnx -c Release --no-build --verbosity normal
+
+      - name: Publish self-contained exe
+        run: >
+          dotnet publish Backend/DeepFolderComp.Backend.csproj
+          -c Release
+          -r win-x64
+          --self-contained
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o publish
+
+      - name: Generate version tag
+        id: version
+        shell: bash
+        run: |
+          VERSION="v$(date -u +'%Y.%m.%d-%H%M%S')"
+          echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
+
+      - name: Rename exe with version
+        shell: bash
+        run: mv publish/DeepFolderComp.Backend.exe "publish/DeepFolderComp-${{ steps.version.outputs.tag }}.exe"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeepFolderComp-${{ steps.version.outputs.tag }}
+          path: publish/DeepFolderComp-${{ steps.version.outputs.tag }}.exe
+
+      - name: Create GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: DeepFolderComp ${{ steps.version.outputs.tag }}
+          body: |
+            Automated release from commit ${{ github.sha }}.
+
+            **How to use:**
+            1. Download `DeepFolderComp-${{ steps.version.outputs.tag }}.exe`
+            2. Run it — the app opens in your browser automatically
+          files: publish/DeepFolderComp-${{ steps.version.outputs.tag }}.exe
+          generate_release_notes: true
