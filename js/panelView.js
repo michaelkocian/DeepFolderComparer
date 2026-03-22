@@ -164,17 +164,18 @@ function renderPanelHeaderControls(containerId, options) {
   const { zoom, onZoom, onToggleSubfolders, onToggleShowAll } = options;
 
   const showAllHtml = onToggleShowAll ? `
-    <label class="checkbox-label compact" title="Show all source files, not just missing">
-      <input type="checkbox" class="show-all-toggle">
-      <span class="label-text">All</span>
-    </label>
+    <select class="show-all-select compact-select" title="Filter source files">
+      <option value="missing">Missing files</option>
+      <option value="all">All source files</option>
+    </select>
     <span class="panel-separator"></span>
   ` : '';
 
   container.innerHTML = `
     ${showAllHtml}
-    <button class="btn-icon subfolder-toggle" title="Show all files in subfolders">
+    <button class="btn-icon subfolder-toggle has-label" title="Include subfolders">
       ${icons.layers}
+      <span class="btn-icon-label">Show subfolder files</span>
     </button>
     <div class="zoom-control compact">
       <input type="range" min="1" max="10" value="${zoom}">
@@ -183,8 +184,8 @@ function renderPanelHeaderControls(containerId, options) {
   `;
 
   if (onToggleShowAll) {
-    const showAllCb = container.querySelector('.show-all-toggle');
-    showAllCb.addEventListener('change', () => onToggleShowAll(showAllCb.checked));
+    const showAllSelect = container.querySelector('.show-all-select');
+    showAllSelect.addEventListener('change', () => onToggleShowAll(showAllSelect.value === 'all'));
   }
 
   let subfolderActive = false;

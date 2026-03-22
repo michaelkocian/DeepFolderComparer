@@ -257,7 +257,7 @@
 }
 
 .zoom-control.compact input[type="range"] {
-  width: 70px;
+  width: 140px;
 }
 
 /* ─── Locked checkbox ─── */
@@ -308,6 +308,39 @@
 .cancel-compare-btn:hover {
   color: var(--color-error) !important;
   background: var(--color-error-bg) !important;
+}
+
+/* ─── Compact select for panel headers ─── */
+.compact-select {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  color: var(--color-text-primary);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  outline: none;
+  appearance: auto;
+}
+
+.compact-select:hover {
+  border-color: var(--color-border-light);
+}
+
+.compact-select:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 1px;
+}
+
+/* ─── Icon button with label ─── */
+.btn-icon.has-label {
+  gap: var(--spacing-xs);
+}
+
+.btn-icon-label {
+  font-size: var(--font-size-sm);
+  color: inherit;
 }
 
 /* ─── Subfolder Toggle ─── */
