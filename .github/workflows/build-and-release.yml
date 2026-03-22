@@ -38,6 +38,7 @@ jobs:
           -r win-x64
           --self-contained
           -p:PublishSingleFile=true
+          -p:PublishTrimmed=true
           -p:IncludeNativeLibrariesForSelfExtract=true
           -o publish
 
@@ -61,15 +62,13 @@ jobs:
 
       - name: Create GitHub Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: DeepFolderComp ${{ steps.version.outputs.tag }}
-          body: |
-            Automated release from commit ${{ github.sha }}.
-
-            **How to use:**
-            1. Download `DeepFolderComp-${{ steps.version.outputs.tag }}.exe`
-            2. Run it — the app opens in your browser automatically
-          files: publish/DeepFolderComp-${{ steps.version.outputs.tag }}.exe
-          generate_release_notes: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "${{ steps.version.outputs.tag }}"
+          "publish/DeepFolderComp-${{ steps.version.outputs.tag }}.exe"
+          --title "DeepFolderComp ${{ steps.version.outputs.tag }}"
+          --generate-notes
+          --notes "**How to use:**
+          1. Download \`DeepFolderComp-${{ steps.version.outputs.tag }}.exe\`
+          2. Run it — the app opens in your browser automatically"
