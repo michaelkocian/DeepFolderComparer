@@ -76,7 +76,7 @@ public sealed class WindowsShellMoverTests : IDisposable
     }
 
     [Fact]
-    public void Move_DestinationAlreadyExists_OverwritesSilently()
+    public void Move_DestinationAlreadyExists_DeletesDestAndMoves()
     {
         var source = CreateTempFile("src.txt", "new content");
         var dest = CreateTempFile("dst.txt", "old content");
@@ -85,6 +85,45 @@ public sealed class WindowsShellMoverTests : IDisposable
 
         Assert.False(File.Exists(source));
         Assert.Equal("new content", File.ReadAllText(dest));
+    }
+
+    [Fact]
+    public void Move_DestinationAlreadyExists_InSubdirectory_Succeeds()
+    {
+        var source = CreateTempFile("source/photo.jpg", "source data");
+        var dest = CreateTempFile("dest/photo.jpg", "existing data");
+
+        _mover.Move(source, dest);
+
+        Assert.False(File.Exists(source));
+        Assert.Equal("source data", File.ReadAllText(dest));
+    }
+
+    [Fact]
+    public void Move_DestinationAlreadyExists_PreservesTimestamp()
+    {
+        var source = CreateTempFile("src_ts.txt", "newer");
+        var originalWrite = new DateTime(2021, 3, 10, 8, 0, 0);
+        File.SetLastWriteTime(source, originalWrite);
+        var dest = CreateTempFile("dst_ts.txt", "older");
+
+        _mover.Move(source, dest);
+
+        Assert.Equal("newer", File.ReadAllText(dest));
+        Assert.Equal(originalWrite, File.GetLastWriteTime(dest));
+    }
+
+    [Fact]
+    public void Move_DestinationAlreadyExists_LargerFile_Succeeds()
+    {
+        var largeContent = new string('A', 50_000);
+        var source = CreateTempFile("large_src.bin", largeContent);
+        var dest = CreateTempFile("large_dst.bin", "small existing");
+
+        _mover.Move(source, dest);
+
+        Assert.False(File.Exists(source));
+        Assert.Equal(largeContent, File.ReadAllText(dest));
     }
 
     [Fact]

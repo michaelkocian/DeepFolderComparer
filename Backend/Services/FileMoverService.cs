@@ -17,6 +17,8 @@ public class FileMoverService
             var targetName = fileName ?? sourceInfo.Name;
             var destPath = Path.Combine(destDir, targetName);
 
+            Console.WriteLine($"[FileMover] Request: \"{sourcePath}\" -> \"{destPath}\" (conflict: {conflictAction ?? "none"})");
+
             Directory.CreateDirectory(destDir);
 
             if (File.Exists(destPath))

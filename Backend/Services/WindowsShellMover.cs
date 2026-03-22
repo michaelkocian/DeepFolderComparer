@@ -17,6 +17,14 @@ public sealed class WindowsShellMover
         if (!File.Exists(source))
             throw new FileNotFoundException("Source file not found.", source);
 
+        Console.WriteLine($"[ShellMover] Moving: \"{source}\" -> \"{destination}\"");
+
+        if (File.Exists(destination))
+        {
+            Console.WriteLine($"[ShellMover] Destination exists, deleting: \"{destination}\"");
+            File.Delete(destination);
+        }
+
         var op = new SHFILEOPSTRUCT
         {
             wFunc = FO_MOVE,
@@ -31,6 +39,8 @@ public sealed class WindowsShellMover
 
         if (op.fAnyOperationsAborted)
             throw new OperationCanceledException("Shell move was aborted");
+
+        Console.WriteLine($"[ShellMover] Success: \"{Path.GetFileName(source)}\" -> \"{destination}\"");
     }
 
     /// <summary>Returns "photo (2).jpg", "photo (3).jpg", … until a free name is found.</summary>
