@@ -1,47 +1,41 @@
 /**
  * FileInfo — normalized file metadata object.
+ * Now uses fullPath instead of file/directory handles (backend provides file access).
  */
 
 /**
  * @typedef {Object} FileInfo
  * @property {string} name - Filename
  * @property {string} relativePath - Path relative to selected root (using / separator)
+ * @property {string} fullPath - Absolute file path on disk
  * @property {string} parentPath - Parent directory relative path
  * @property {number} size - File size in bytes
  * @property {number} lastModified - Last modified timestamp (ms since epoch)
- * @property {string} type - MIME type reported by OS
+ * @property {number} createdAt - Creation timestamp (ms since epoch)
+ * @property {string} type - MIME type
  * @property {string} extension - File extension (lowercase, without dot)
  * @property {number} depth - Nesting depth (0 = root level)
- * @property {boolean} isHidden - Starts with dot
- * @property {FileSystemFileHandle} fileHandle - Handle for reading/moving the file
- * @property {FileSystemDirectoryHandle} directoryHandle - Parent directory handle
+ * @property {boolean} isHidden - Starts with dot or is hidden
  */
 
 /**
- * Create a FileInfo object from a File and its handles.
- * @param {File} file
- * @param {string} relativePath
- * @param {FileSystemFileHandle} fileHandle
- * @param {FileSystemDirectoryHandle} directoryHandle
+ * Create a FileInfo object from a backend DTO.
+ * @param {object} dto - FileInfoDto from the backend API
  * @returns {FileInfo}
  */
-export function createFileInfo(file, relativePath, fileHandle, directoryHandle) {
-  const parts = relativePath.split('/');
-  const parentPath = parts.slice(0, -1).join('/');
-  const extensionMatch = file.name.match(/\.([^.]+)$/);
-
+export function createFileInfoFromDto(dto) {
   return {
-    name: file.name,
-    relativePath,
-    parentPath,
-    size: file.size,
-    lastModified: file.lastModified,
-    type: file.type || guessType(file.name),
-    extension: extensionMatch ? extensionMatch[1].toLowerCase() : '',
-    depth: parts.length - 1,
-    isHidden: file.name.startsWith('.'),
-    fileHandle,
-    directoryHandle,
+    name: dto.name,
+    relativePath: dto.relativePath,
+    fullPath: dto.fullPath,
+    parentPath: dto.parentPath,
+    size: dto.size,
+    lastModified: dto.lastModified,
+    createdAt: dto.createdAt || dto.lastModified,
+    type: dto.type || guessType(dto.name),
+    extension: dto.extension,
+    depth: dto.depth,
+    isHidden: dto.isHidden,
   };
 }
 
@@ -69,7 +63,7 @@ export function formatDate(timestamp) {
 }
 
 /**
- * Guess MIME type from extension when OS doesn't provide one.
+ * Guess MIME type from extension when backend doesn't provide one.
  */
 function guessType(filename) {
   const ext = (filename.match(/\.([^.]+)$/) || [])[1]?.toLowerCase();

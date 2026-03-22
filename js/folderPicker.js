@@ -1,24 +1,14 @@
 /**
  * Folder picker — lets user select source and destination folders.
- * Uses the File System Access API (showDirectoryPicker).
+ * Uses the C# backend to open native folder browser dialogs.
  */
 
 import { getState, setState } from './state.js';
+import { browseFolder } from './apiClient.js';
 import { icons } from './icons.js';
 import { showError } from './toast.js';
 
 export function renderFolderPicker(container, { onStartScan, onFolderChange } = {}) {
-  if (!('showDirectoryPicker' in window)) {
-    container.innerHTML = `
-      <div class="unsupported-warning">
-        <h3>Browser Not Supported</h3>
-        <p>This app requires the File System Access API, which is available in <strong>Google Chrome</strong> or <strong>Microsoft Edge</strong>.<br>
-        Please open this page in one of those browsers.</p>
-      </div>
-    `;
-    return;
-  }
-
   container.innerHTML = `
     <div class="folder-picker">
       <div class="picker-intro">
@@ -59,37 +49,39 @@ export function renderFolderPicker(container, { onStartScan, onFolderChange } = 
 
   btnStartScan.addEventListener('click', () => {
     const state = getState();
-    if (state.sourceHandle && state.destHandle) {
+    if (state.sourcePath && state.destPath) {
       if (onStartScan) onStartScan();
     }
   });
 
   async function pickFolder(which) {
     try {
-      const handle = await window.showDirectoryPicker({ mode: 'read' });
+      const path = await browseFolder();
+      if (!path) return; // User cancelled
+
+      const folderName = path.split(/[\\/]/).pop() || path;
 
       if (which === 'source') {
-        setState({ sourceHandle: handle, sourceName: handle.name });
-        updateSlot(slotSource, handle.name);
+        setState({ sourcePath: path, sourceName: folderName });
+        updateSlot(slotSource, folderName, path);
       } else {
-        setState({ destHandle: handle, destName: handle.name });
-        updateSlot(slotDest, handle.name);
+        setState({ destPath: path, destName: folderName });
+        updateSlot(slotDest, folderName, path);
       }
 
       const updated = getState();
-      btnStartScan.disabled = !(updated.sourceHandle && updated.destHandle);
+      btnStartScan.disabled = !(updated.sourcePath && updated.destPath);
       if (onFolderChange) onFolderChange();
     } catch (err) {
-      if (err.name !== 'AbortError') {
-        showError(`Failed to select folder: ${err.message}`);
-      }
+      showError(`Failed to select folder: ${err.message}`);
     }
   }
 
-  function updateSlot(slotElement, name) {
+  function updateSlot(slotElement, name, fullPath) {
     slotElement.classList.add('selected');
     const pathElement = slotElement.querySelector('.slot-path');
-    pathElement.textContent = name;
+    pathElement.textContent = fullPath || name;
     pathElement.classList.remove('empty');
+    pathElement.title = fullPath || '';
   }
 }

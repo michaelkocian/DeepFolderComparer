@@ -1,12 +1,13 @@
 /**
  * Thumbnail / icon generator for file tiles.
- * - Images: real thumbnail via createImageBitmap + canvas
- * - Videos: first-frame capture
+ * - Images: real thumbnail via backend file URL + canvas
+ * - Videos: first-frame capture via backend file URL
  * - Others: SVG file-type icon
  * Uses IntersectionObserver for lazy loading.
  */
 
 import { getFileCategory } from './fileInfo.js';
+import { fileUrl } from './apiClient.js';
 import { icons } from './icons.js';
 
 const thumbnailCache = new Map();
@@ -32,13 +33,14 @@ export function getFileIcon(fileInfo) {
 }
 
 /**
- * Generate a real thumbnail for an image file.
- * Returns a data URL or null if not possible.
+ * Generate a real thumbnail for an image file via backend URL.
  */
 async function generateImageThumbnail(fileInfo, maxSize = 200) {
   try {
-    const file = await fileInfo.fileHandle.getFile();
-    const bitmap = await createImageBitmap(file, {
+    const url = fileUrl(fileInfo.fullPath);
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const bitmap = await createImageBitmap(blob, {
       resizeWidth: maxSize,
       resizeHeight: maxSize,
       resizeQuality: 'low',
@@ -49,63 +51,57 @@ async function generateImageThumbnail(fileInfo, maxSize = 200) {
     ctx.drawImage(bitmap, 0, 0);
     bitmap.close();
 
-    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.7 });
-    return URL.createObjectURL(blob);
+    const thumbBlob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.7 });
+    return URL.createObjectURL(thumbBlob);
   } catch {
     return null;
   }
 }
 
 /**
- * Generate a thumbnail from a video file's first frame.
- * Returns a data URL or null.
+ * Generate a thumbnail from a video file's first frame via backend URL.
  */
 function generateVideoThumbnail(fileInfo) {
   return new Promise((resolve) => {
     const timeout = setTimeout(() => resolve(null), 5000);
 
-    (async () => {
-      try {
-        const file = await fileInfo.fileHandle.getFile();
-        const url = URL.createObjectURL(file);
-        const video = document.createElement('video');
-        video.muted = true;
-        video.preload = 'metadata';
+    try {
+      const url = fileUrl(fileInfo.fullPath);
+      const video = document.createElement('video');
+      video.muted = true;
+      video.preload = 'metadata';
+      video.crossOrigin = 'anonymous';
 
-        video.addEventListener('loadeddata', () => {
-          video.currentTime = 0.1;
-        });
+      video.addEventListener('loadeddata', () => {
+        video.currentTime = 0.1;
+      });
 
-        video.addEventListener('seeked', () => {
-          try {
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.min(video.videoWidth, 200);
-            canvas.height = Math.round(canvas.width * (video.videoHeight / video.videoWidth));
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            URL.revokeObjectURL(url);
-            clearTimeout(timeout);
-            resolve(dataUrl);
-          } catch {
-            URL.revokeObjectURL(url);
-            clearTimeout(timeout);
-            resolve(null);
-          }
-        });
-
-        video.addEventListener('error', () => {
-          URL.revokeObjectURL(url);
+      video.addEventListener('seeked', () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.min(video.videoWidth, 200);
+          canvas.height = Math.round(canvas.width * (video.videoHeight / video.videoWidth));
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          clearTimeout(timeout);
+          resolve(dataUrl);
+        } catch {
           clearTimeout(timeout);
           resolve(null);
-        });
+        }
+      });
 
-        video.src = url;
-      } catch {
+      video.addEventListener('error', () => {
         clearTimeout(timeout);
         resolve(null);
-      }
-    })();
+      });
+
+      video.src = url;
+    } catch {
+      clearTimeout(timeout);
+      resolve(null);
+    }
   });
 }
 
@@ -153,9 +149,7 @@ function applyThumbnail(tileElement, url) {
   img.src = url;
   img.loading = 'lazy';
   img.alt = '';
-  // Keep the icon as fallback in case image fails
   img.addEventListener('error', () => img.remove());
-  // Clear the icon and insert image
   const iconEl = thumbArea.querySelector('.file-type-icon');
   if (iconEl) iconEl.style.display = 'none';
   thumbArea.prepend(img);
@@ -163,7 +157,6 @@ function applyThumbnail(tileElement, url) {
 
 /**
  * Setup lazy loading observer for file tiles.
- * Returns a function to observe new tiles.
  */
 export function createThumbnailObserver(fileInfoMap) {
   const observer = new IntersectionObserver(

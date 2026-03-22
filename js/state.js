@@ -9,14 +9,14 @@ const state = {
   /** @type {'select' | 'scan' | 'compare' | 'results'} */
   currentStage: 'select',
 
-  /** @type {FileSystemDirectoryHandle | null} */
-  sourceHandle: null,
-  /** @type {FileSystemDirectoryHandle | null} */
-  destHandle: null,
+  /** @type {string} absolute path to source folder */
+  sourcePath: '',
+  /** @type {string} absolute path to destination folder */
+  destPath: '',
 
-  /** @type {string} */
+  /** @type {string} display name for source folder */
   sourceName: '',
-  /** @type {string} */
+  /** @type {string} display name for destination folder */
   destName: '',
 
   /** @type {import('./fileInfo.js').FileInfo[]} */

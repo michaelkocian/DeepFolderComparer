@@ -1,7 +1,7 @@
 /**
  * Drag and drop handler.
  * Makes left panel tiles draggable, right panel + tree folders droppable.
- * On drop, moves files on disk via fileMover.
+ * On drop, moves files on disk via the C# backend through fileMover.
  */
 
 import { getState, setState } from './state.js';
@@ -10,7 +10,6 @@ import { showWarning } from './toast.js';
 
 let leftPanelRef = null;
 let rightPanelRef = null;
-let destHandleRef = null;
 
 /**
  * Initialize drag-and-drop for the results panels.
@@ -20,7 +19,6 @@ let destHandleRef = null;
 export function initDragDrop(leftPanel, rightPanel) {
   leftPanelRef = leftPanel;
   rightPanelRef = rightPanel;
-  destHandleRef = rightPanel.getDestHandle();
 
   const leftGrid = document.getElementById('fileGridLeft');
   const rightGridWrapper = document.getElementById('gridWrapperRight');
@@ -34,14 +32,12 @@ export function initDragDrop(leftPanel, rightPanel) {
     const filePath = tile.dataset.filePath;
     const state = getState();
 
-    // If dragged tile is not in selection, make it the only selection
     if (!state.selectedFiles.has(filePath)) {
       const selected = new Set([filePath]);
       setState({ selectedFiles: selected });
       updateSelectionVisuals();
     }
 
-    // Set drag data
     const selectedPaths = [...state.selectedFiles];
     if (!selectedPaths.includes(filePath)) {
       selectedPaths.push(filePath);
@@ -69,7 +65,6 @@ export function initDragDrop(leftPanel, rightPanel) {
     e.dataTransfer.setDragImage(ghost, 0, 0);
     setTimeout(() => ghost.remove(), 0);
 
-    // Mark dragging tiles
     document.querySelectorAll('#fileGridLeft .file-tile.selected').forEach(t => t.classList.add('dragging'));
   });
 
@@ -116,7 +111,6 @@ export function initDragDrop(leftPanel, rightPanel) {
     if (row) {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
-      // Remove previous highlight
       treeRight.querySelectorAll('.tree-item-row.drop-target').forEach(r => r.classList.remove('drop-target'));
       row.classList.add('drop-target');
     }
@@ -156,27 +150,19 @@ export function initDragDrop(leftPanel, rightPanel) {
 /**
  * Handle a drop operation — move files to the destination folder.
  * @param {string[]} sourcePaths - relative paths of files to move
- * @param {string} [targetPath] - destination folder path (default: current right panel path)
+ * @param {string} [targetPath] - destination folder relative path (default: current right panel path)
  */
 async function handleDrop(sourcePaths, targetPath) {
   const state = getState();
 
-  // Resolve target path
-  const destPath = targetPath !== undefined ? targetPath : rightPanelRef.getCurrentPath();
+  // Resolve target relative path
+  const destRelativePath = targetPath !== undefined ? targetPath : rightPanelRef.getCurrentPath();
 
-  // Navigate to the target directory handle
-  let targetDirHandle = destHandleRef;
-  if (destPath) {
-    try {
-      const parts = destPath.split('/');
-      for (const part of parts) {
-        targetDirHandle = await targetDirHandle.getDirectoryHandle(part);
-      }
-    } catch (err) {
-      showWarning(`Cannot access destination folder: ${err.message}`);
-      return;
-    }
-  }
+  // Build absolute destination directory path
+  const destRoot = state.destPath;
+  const destDir = destRelativePath
+    ? `${destRoot}/${destRelativePath}`
+    : destRoot;
 
   // Find FileInfo objects for the source paths
   const missingFiles = state.missingFiles;
@@ -189,11 +175,10 @@ async function handleDrop(sourcePaths, targetPath) {
     return;
   }
 
-  // Perform move
-  const { moved } = await moveFiles(filesToMove, targetDirHandle, destPath);
+  // Perform move via backend
+  const { moved } = await moveFiles(filesToMove, destDir, destRelativePath);
 
   if (moved.length > 0) {
-    // Build a set of source paths that were successfully moved
     const movedNames = new Set(moved.map(m => m.name));
     const movedSourcePaths = new Set(
       filesToMove
@@ -213,13 +198,9 @@ async function handleDrop(sourcePaths, targetPath) {
     leftPanelRef.refresh();
 
     // Rebuild left panel with updated missing files
-    // Re-import and reinitialize would be complex; instead we reinit inline
     const { initLeftPanel } = await import('./panelView.js');
     const newLeftPanel = initLeftPanel(remainingMissing);
     leftPanelRef = newLeftPanel;
-
-    // Reinitialize drag-drop on new content
-    // (Event listeners on grid persist since they're on the container)
   }
 }
 

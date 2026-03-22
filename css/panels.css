@@ -34,14 +34,25 @@
 /* ─── Panel Internals ─── */
 .panel .tree-sidebar {
   width: 220px;
-  min-width: 160px;
-  max-width: 350px;
-  border-right: 1px solid var(--color-border);
+  min-width: 80px;
   background: var(--color-bg-secondary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   flex-shrink: 0;
+}
+
+.tree-divider {
+  width: 4px;
+  cursor: col-resize;
+  background: var(--color-border);
+  transition: background var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.tree-divider:hover,
+.tree-divider.dragging {
+  background: var(--color-accent);
 }
 
 .panel .tree-sidebar-header {

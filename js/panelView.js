@@ -9,13 +9,10 @@ import { icons } from './icons.js';
 import { getState, setState } from './state.js';
 import { buildFolderTree, renderTree, getFilesAtPath, getAllFilesUnderPath, createExpandedState } from './treeView.js';
 import { openPreview } from './filePreview.js';
+import { createFolder } from './apiClient.js';
 
 /**
  * Render files into a grid.
- * @param {HTMLElement} gridElement - the .file-grid element
- * @param {import('./fileInfo.js').FileInfo[]} files
- * @param {object} options - { draggable, zoom, onFileSelect }
- * @returns {{ observer: object }} cleanup handle
  */
 export function renderFileGrid(gridElement, files, options = {}) {
   const { draggable = false, zoom = 5 } = options;
@@ -36,7 +33,6 @@ export function renderFileGrid(gridElement, files, options = {}) {
     return { observer: null };
   }
 
-  // Build a FileInfo map for thumbnail observer
   const fileInfoMap = new Map();
   files.forEach(f => fileInfoMap.set(f.relativePath, f));
 
@@ -56,9 +52,6 @@ export function renderFileGrid(gridElement, files, options = {}) {
   return { observer };
 }
 
-/**
- * Create a single file tile element.
- */
 function createFileTile(fileInfo, draggable) {
   const category = getFileCategory(fileInfo);
   const tile = document.createElement('div');
@@ -86,24 +79,20 @@ function createFileTile(fileInfo, draggable) {
     </div>
   `;
 
-  // Selection toggle
   if (draggable) {
     tile.addEventListener('click', (e) => {
       const state = getState();
       const selected = new Set(state.selectedFiles);
 
       if (e.ctrlKey || e.metaKey) {
-        // Toggle selection
         if (selected.has(fileInfo.relativePath)) {
           selected.delete(fileInfo.relativePath);
         } else {
           selected.add(fileInfo.relativePath);
         }
       } else if (e.shiftKey) {
-        // Range select — add to selection
         selected.add(fileInfo.relativePath);
       } else {
-        // Single select
         selected.clear();
         selected.add(fileInfo.relativePath);
       }
@@ -116,9 +105,6 @@ function createFileTile(fileInfo, draggable) {
   return tile;
 }
 
-/**
- * Update visual selection state on all tiles.
- */
 function updateSelectionVisuals() {
   const state = getState();
   const tiles = document.querySelectorAll('#fileGridLeft .file-tile');
@@ -128,9 +114,6 @@ function updateSelectionVisuals() {
   });
 }
 
-/**
- * Render breadcrumb for a folder path.
- */
 export function renderBreadcrumb(container, folderPath, onNavigate) {
   container.innerHTML = '';
 
@@ -156,9 +139,6 @@ export function renderBreadcrumb(container, folderPath, onNavigate) {
   }
 }
 
-/**
- * Render zoom + subfolder toggle controls into a panel header.
- */
 function renderPanelHeaderControls(containerId, options) {
   const container = document.getElementById(containerId);
   const { zoom, onZoom, onToggleSubfolders, onToggleShowAll } = options;
@@ -219,7 +199,6 @@ export function initLeftPanel(missingFiles, sourceFiles) {
   let currentZoom = state.zoomLeft;
   let showSubfolders = false;
 
-  // Render panel header controls
   renderPanelHeaderControls('panelControlsLeft', {
     zoom: currentZoom,
     onZoom(z) { currentZoom = z; setState({ zoomLeft: z }); refresh(); },
@@ -239,13 +218,11 @@ export function initLeftPanel(missingFiles, sourceFiles) {
       ? getAllFilesUnderPath(tree, currentPath)
       : getFilesAtPath(tree, currentPath);
 
-    // Update panel title
     const titleEl = document.querySelector('#panelLeft .panel-title');
     if (titleEl) {
       titleEl.textContent = showAllFiles ? 'All Source Files' : 'Missing Files (Source)';
     }
 
-    // Tree
     renderTree(
       document.getElementById('treeLeft'),
       tree,
@@ -254,14 +231,12 @@ export function initLeftPanel(missingFiles, sourceFiles) {
       { expandedPaths }
     );
 
-    // Breadcrumb
     renderBreadcrumb(
       document.getElementById('breadcrumbLeft'),
       currentPath,
       (path) => { currentPath = path; setState({ leftSelectedPath: path }); refresh(); }
     );
 
-    // Grid
     if (currentObserver) currentObserver.disconnect();
     const result = renderFileGrid(
       document.getElementById('fileGridLeft'),
@@ -270,7 +245,6 @@ export function initLeftPanel(missingFiles, sourceFiles) {
     );
     currentObserver = result.observer;
 
-    // Badge
     document.getElementById('missingCount').textContent = activeFiles.length;
   }
 
@@ -286,7 +260,7 @@ export function initLeftPanel(missingFiles, sourceFiles) {
 /**
  * Initialize the full right panel (destination folder).
  */
-export function initRightPanel(destFiles, destHandle) {
+export function initRightPanel(destFiles) {
   const state = getState();
   const expandedPaths = createExpandedState();
   let tree = buildFolderTree(destFiles);
@@ -296,7 +270,6 @@ export function initRightPanel(destFiles, destHandle) {
   let allDestFiles = [...destFiles];
   let showSubfolders = false;
 
-  // Render panel header controls
   renderPanelHeaderControls('panelControlsRight', {
     zoom: currentZoom,
     onZoom(z) { currentZoom = z; setState({ zoomRight: z }); refresh(); },
@@ -308,7 +281,6 @@ export function initRightPanel(destFiles, destHandle) {
       ? getAllFilesUnderPath(tree, currentPath)
       : getFilesAtPath(tree, currentPath);
 
-    // Tree with new folder support
     renderTree(
       document.getElementById('treeRight'),
       tree,
@@ -321,14 +293,12 @@ export function initRightPanel(destFiles, destHandle) {
       }
     );
 
-    // Breadcrumb
     renderBreadcrumb(
       document.getElementById('breadcrumbRight'),
       currentPath,
       (path) => { currentPath = path; setState({ rightSelectedPath: path }); refresh(); }
     );
 
-    // Grid
     if (currentObserver) currentObserver.disconnect();
     const result = renderFileGrid(
       document.getElementById('fileGridRight'),
@@ -337,7 +307,6 @@ export function initRightPanel(destFiles, destHandle) {
     );
     currentObserver = result.observer;
 
-    // Badge
     document.getElementById('destCount').textContent = allDestFiles.length;
   }
 
@@ -347,19 +316,14 @@ export function initRightPanel(destFiles, destHandle) {
 
     const sanitizedName = folderName.trim();
     try {
-      // Navigate to parent directory handle
-      let targetDirHandle = destHandle;
-      if (parentPath) {
-        const parts = parentPath.split('/');
-        for (const part of parts) {
-          targetDirHandle = await targetDirHandle.getDirectoryHandle(part);
-        }
-      }
+      // Build full path and create via backend
+      const destRoot = state.destPath;
+      const fullPath = parentPath
+        ? `${destRoot}/${parentPath}/${sanitizedName}`
+        : `${destRoot}/${sanitizedName}`;
 
-      // Create the new folder on disk
-      await targetDirHandle.getDirectoryHandle(sanitizedName, { create: true });
+      await createFolder(fullPath);
 
-      // Rebuild tree (rescan would be expensive — just add the node)
       const newPath = parentPath ? `${parentPath}/${sanitizedName}` : sanitizedName;
       addEmptyFolderToTree(tree, newPath);
       refresh();
@@ -381,7 +345,6 @@ export function initRightPanel(destFiles, destHandle) {
       tree = buildFolderTree(allDestFiles);
       refresh();
     },
-    getDestHandle() { return destHandle; },
   };
 }
 

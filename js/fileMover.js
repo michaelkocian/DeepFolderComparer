@@ -1,68 +1,49 @@
 /**
- * File mover — handles the actual disk move operation.
- * Strategy 1 (preferred): fileHandle.move() — preserves metadata
- * Strategy 2 (fallback): read → write → delete (loses creation date)
+ * File mover — delegates to C# backend for reliable moves with metadata preservation.
  */
 
 import { showSuccess, showError, showWarning } from './toast.js';
-import { createFileInfo } from './fileInfo.js';
+import { moveFile as apiMoveFile } from './apiClient.js';
+import { createFileInfoFromDto } from './fileInfo.js';
+import { showConflictDialog } from './conflictDialog.js';
 
 /**
- * Move a file from source to destination directory.
+ * Move a file from source to destination directory via the backend.
  * @param {import('./fileInfo.js').FileInfo} fileInfo - source file
- * @param {FileSystemDirectoryHandle} destDirHandle - destination directory handle
- * @param {string} destPath - destination folder relative path (for display)
+ * @param {string} destDir - absolute path to destination directory
+ * @param {string} destRelativePath - destination folder relative path (for display)
  * @returns {Promise<{ success: boolean, newFileInfo?: import('./fileInfo.js').FileInfo }>}
  */
-export async function moveFile(fileInfo, destDirHandle, destPath, { silent = false } = {}) {
+export async function moveFile(fileInfo, destDir, destRelativePath, { silent = false } = {}) {
   const fileName = fileInfo.name;
 
   try {
-    // Check if file already exists in destination
-    try {
-      await destDirHandle.getFileHandle(fileName);
-      // File exists — ask user
-      const overwrite = confirm(`"${fileName}" already exists in the destination. Overwrite?`);
-      if (!overwrite) {
-        return { success: false };
-      }
-    } catch {
-      // File doesn't exist — good
-    }
+    // First attempt without conflict action — backend will report conflict if file exists
+    let result = await apiMoveFile(fileInfo.fullPath, destDir, fileName);
 
-    // Strategy 1: Try native move (preserves metadata)
-    let moved = false;
-    if (typeof fileInfo.fileHandle.move === 'function') {
-      try {
-        await fileInfo.fileHandle.move(destDirHandle, fileName);
-        moved = true;
-      } catch {
-        // Native move not supported or failed — fall through to strategy 2
+    if (!result.success && result.conflict) {
+      if (silent) {
+        // In batch mode, auto-rename to avoid blocking on each file
+        result = await apiMoveFile(fileInfo.fullPath, destDir, fileName, 'rename');
+      } else {
+        const choice = await showConflictDialog(fileName);
+        if (choice === 'cancel') return { success: false };
+        result = await apiMoveFile(fileInfo.fullPath, destDir, fileName, choice);
       }
     }
 
-    // Strategy 2: Copy + delete (fallback)
-    if (!moved) {
-      const sourceFile = await fileInfo.fileHandle.getFile();
-      const sourceBuffer = await sourceFile.arrayBuffer();
-
-      // Write to destination
-      const newHandle = await destDirHandle.getFileHandle(fileName, { create: true });
-      const writable = await newHandle.createWritable();
-      await writable.write(sourceBuffer);
-      await writable.close();
-
-      // Delete source
-      await fileInfo.directoryHandle.removeEntry(fileName);
+    if (!result.success) {
+      if (!silent) showError(`Failed to move "${fileName}": ${result.error}`);
+      return { success: false };
     }
 
-    // Build new FileInfo for the moved file
-    const newHandle = await destDirHandle.getFileHandle(fileName);
-    const newFile = await newHandle.getFile();
-    const newRelativePath = destPath ? `${destPath}/${fileName}` : fileName;
-    const newFileInfo = createFileInfo(newFile, newRelativePath, newHandle, destDirHandle);
+    const newFileInfo = createFileInfoFromDto(result.newFileInfo);
+    const actualName = newFileInfo.name;
+    newFileInfo.relativePath = destRelativePath ? `${destRelativePath}/${actualName}` : actualName;
+    newFileInfo.parentPath = destRelativePath;
+    newFileInfo.depth = newFileInfo.relativePath.split('/').length - 1;
 
-    if (!silent) showSuccess(`Moved "${fileName}" to ${destPath || '(root)'}`);
+    if (!silent) showSuccess(`Moved "${fileName}" to ${destRelativePath || '(root)'}`);
     return { success: true, newFileInfo };
   } catch (err) {
     if (!silent) showError(`Failed to move "${fileName}": ${err.message}`);
@@ -73,17 +54,17 @@ export async function moveFile(fileInfo, destDirHandle, destPath, { silent = fal
 /**
  * Move multiple files.
  * @param {import('./fileInfo.js').FileInfo[]} fileInfos
- * @param {FileSystemDirectoryHandle} destDirHandle
- * @param {string} destPath
+ * @param {string} destDir - absolute path to destination directory
+ * @param {string} destRelativePath - destination relative path for display
  * @returns {Promise<{ moved: import('./fileInfo.js').FileInfo[], failed: string[] }>}
  */
-export async function moveFiles(fileInfos, destDirHandle, destPath) {
+export async function moveFiles(fileInfos, destDir, destRelativePath) {
   const moved = [];
   const failed = [];
 
   const isBatch = fileInfos.length > 1;
   for (const fileInfo of fileInfos) {
-    const result = await moveFile(fileInfo, destDirHandle, destPath, { silent: isBatch });
+    const result = await moveFile(fileInfo, destDir, destRelativePath, { silent: isBatch });
     if (result.success && result.newFileInfo) {
       moved.push(result.newFileInfo);
     } else {
@@ -93,7 +74,7 @@ export async function moveFiles(fileInfos, destDirHandle, destPath) {
 
   if (isBatch) {
     if (moved.length > 0 && failed.length === 0) {
-      showSuccess(`Moved ${moved.length} files to ${destPath || '(root)'}`);
+      showSuccess(`Moved ${moved.length} files to ${destRelativePath || '(root)'}`);
     } else if (failed.length > 0 && moved.length > 0) {
       showWarning(`Moved ${moved.length} files, ${failed.length} failed`);
     } else if (failed.length > 0) {

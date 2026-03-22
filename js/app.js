@@ -46,11 +46,8 @@ async function runScan() {
   if (scanRunning) return;
   scanRunning = true;
 
-  // Reveal scan area with animation
   setupTop.classList.add('expanded');
   setupRight.classList.add('visible');
-
-  // Hide comparison config from previous run
   setupBottom.classList.remove('visible');
 
   const state = getState();
@@ -77,7 +74,7 @@ async function runScan() {
   try {
     // Scan source
     progress1.start('Scanning source folder…');
-    const sourceFiles = await scanDirectory(state.sourceHandle, (p) => progress1.update(p));
+    const sourceFiles = await scanDirectory(state.sourcePath, (p) => progress1.update(p));
     progress1.finish('Source scan complete');
     document.getElementById('scanSourceLabel').className = 'scan-folder-name completed';
     document.getElementById('scanSourceLabel').textContent = `${state.sourceName} (${sourceFiles.length} files)`;
@@ -85,12 +82,11 @@ async function runScan() {
     // Scan destination
     document.getElementById('scanDestLabel').className = 'scan-folder-name scanning';
     progress2.start('Scanning destination folder…');
-    const destFiles = await scanDirectory(state.destHandle, (p) => progress2.update(p));
+    const destFiles = await scanDirectory(state.destPath, (p) => progress2.update(p));
     progress2.finish('Destination scan complete');
     document.getElementById('scanDestLabel').className = 'scan-folder-name completed';
     document.getElementById('scanDestLabel').textContent = `${state.destName} (${destFiles.length} files)`;
 
-    // Remove scan pulse, show completed state
     scanRoot.querySelector('.scan-status').classList.remove('active');
     scanRoot.querySelector('.scan-status').classList.add('completed');
 
@@ -98,13 +94,11 @@ async function runScan() {
 
     showSuccess(`Scanned ${sourceFiles.length + destFiles.length} files total`);
 
-    // Update scan button to "Rescan"
     const btnScan = document.querySelector('#btnStartScan');
     if (btnScan) {
       btnScan.textContent = 'Rescan';
     }
 
-    // Reveal comparison config with animation
     await delay(400);
     setupBottom.classList.add('visible');
     renderComparisonConfig(
@@ -129,7 +123,6 @@ async function runComparison() {
   const configRoot = document.getElementById('comparisonConfigRoot');
   const progressRoot = configRoot.querySelector('#compareProgressRoot');
 
-  // Build progress area with cancel button
   progressRoot.style.display = 'block';
   progressRoot.innerHTML = `
     <div class="compare-progress-row">
@@ -142,12 +135,10 @@ async function runComparison() {
   progressRoot.querySelector('.cancel-compare-btn')
     .addEventListener('click', () => cancelComparison());
 
-  // Disable the start button
   const btnStart = configRoot.querySelector('#btnStartCompare');
   btnStart.disabled = true;
   btnStart.textContent = 'Comparing…';
 
-  // Lock config inputs during comparison
   setConfigLocked(true);
 
   const progress = createProgressComponent(progressInner);
@@ -200,20 +191,15 @@ async function runComparison() {
 function initResultsView() {
   const state = getState();
 
-  // Simplified toolbar (zoom moved to panel headers)
   renderToolbar(state);
 
-  // Init panels
   const leftPanel = initLeftPanel(state.missingFiles, state.sourceFiles);
-  const rightPanel = initRightPanel(state.destFiles, state.destHandle);
+  const rightPanel = initRightPanel(state.destFiles);
 
-  // Init drag-and-drop
   initDragDrop(leftPanel, rightPanel);
-
-  // Init panel divider resize
   initPanelDivider();
+  initTreeDividers();
 
-  // Store refs for drag-drop
   window._deepFolderComp = { leftPanel, rightPanel };
 }
 
@@ -230,10 +216,8 @@ function renderToolbar(state) {
     </div>
   `;
 
-  // Back button
   toolbar.querySelector('#btnBackToSetup').addEventListener('click', () => {
     showStage('setup');
-    // Re-render comparison config so the button and progress are reset
     renderComparisonConfig(
       document.getElementById('comparisonConfigRoot'),
       () => runComparison()
@@ -276,6 +260,40 @@ function initPanelDivider() {
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     }
+  });
+}
+
+// ─── Tree Sidebar Divider Resize ───
+function initTreeDividers() {
+  document.querySelectorAll('.tree-divider').forEach(divider => {
+    const sidebar = divider.previousElementSibling;
+    let isDragging = false;
+
+    divider.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      divider.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const panelBody = sidebar.parentElement;
+      const rect = panelBody.getBoundingClientRect();
+      const newWidth = e.clientX - rect.left;
+      const clampedWidth = Math.max(80, Math.min(rect.width * 0.6, newWidth));
+      sidebar.style.width = `${clampedWidth}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        divider.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    });
   });
 }
 

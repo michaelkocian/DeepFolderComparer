@@ -1,0 +1,87 @@
+/* ─── Conflict Dialog ─── */
+
+.conflict-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.conflict-dialog {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  min-width: 380px;
+  max-width: 480px;
+  padding: var(--spacing-xl);
+}
+
+.conflict-header {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--color-warning);
+  margin-bottom: var(--spacing-md);
+}
+
+.conflict-body {
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  margin-bottom: var(--spacing-xl);
+}
+
+.conflict-filename {
+  font-family: var(--font-mono);
+  color: var(--color-text-bright);
+  font-weight: 500;
+}
+
+.conflict-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+}
+
+.conflict-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  font-family: var(--font-family);
+  transition: background var(--transition-fast);
+}
+
+.conflict-btn--cancel {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.conflict-btn--cancel:hover {
+  background: var(--color-bg-hover);
+}
+
+.conflict-btn--rename {
+  background: var(--color-accent);
+  color: var(--color-text-bright);
+  border-color: var(--color-accent);
+}
+
+.conflict-btn--rename:hover {
+  background: var(--color-accent-hover);
+}
+
+.conflict-btn--overwrite {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+.conflict-btn--overwrite:hover {
+  background: var(--color-error);
+  color: var(--color-text-bright);
+}

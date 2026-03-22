@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Backend/">
+    <Project Path="Backend/DeepFolderComp.Backend.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/DeepFolderComp.Tests.csproj" />
+  </Folder>
+</Solution>

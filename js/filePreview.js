@@ -1,9 +1,11 @@
 /**
  * File preview modal — shows file content in a 95% screen overlay.
  * Supports images, video, audio, PDF, text/code, and fallback info view.
+ * Uses backend /api/file endpoint for file content.
  */
 
 import { getFileCategory, formatFileSize, formatDate } from './fileInfo.js';
+import { fileUrl } from './apiClient.js';
 import { icons } from './icons.js';
 
 const MAX_TEXT_SIZE = 5 * 1024 * 1024; // 5 MB limit for text preview
@@ -13,7 +15,6 @@ const ZOOM_STEP = 0.15;
 
 let currentFiles = [];
 let currentIndex = 0;
-let currentBlobUrl = null;
 let modal = null;
 
 let zoomLevel = 1;
@@ -41,9 +42,9 @@ export function openPreview(fileInfo, files) {
 export function closePreview() {
   if (!modal) return;
   resetZoom();
+  stopMedia();
   modal.classList.remove('active');
   document.body.style.overflow = '';
-  revokeBlobUrl();
 }
 
 function ensureModal() {
@@ -87,26 +88,21 @@ function handleKeydown(e) {
   if (e.key === 'ArrowRight') navigate(1);
 }
 
+function stopMedia() {
+  if (!modal) return;
+  modal.querySelectorAll('video, audio').forEach(el => {
+    el.pause();
+    el.removeAttribute('src');
+    el.load();
+  });
+}
+
 function navigate(direction) {
   if (currentFiles.length <= 1) return;
   resetZoom();
+  stopMedia();
   currentIndex = (currentIndex + direction + currentFiles.length) % currentFiles.length;
   renderPreview(currentFiles[currentIndex]);
-}
-
-function revokeBlobUrl() {
-  if (currentBlobUrl) {
-    URL.revokeObjectURL(currentBlobUrl);
-    currentBlobUrl = null;
-  }
-}
-
-/** Create a blob URL from a fileInfo and track it for cleanup. */
-async function createPreviewUrl(fileInfo) {
-  revokeBlobUrl();
-  const file = await fileInfo.fileHandle.getFile();
-  currentBlobUrl = URL.createObjectURL(file);
-  return currentBlobUrl;
 }
 
 async function renderPreview(fileInfo) {
@@ -130,7 +126,7 @@ async function renderPreview(fileInfo) {
   header.querySelector('.preview-next').style.display = hasManyFiles ? '' : 'none';
   counter.style.display = hasManyFiles ? '' : 'none';
 
-  // Body content — show loading, then render
+  // Body content
   body.innerHTML = '<div class="preview-loading">Loading preview…</div>';
 
   try {
@@ -154,8 +150,8 @@ async function buildPreviewContent(fileInfo, category) {
   }
 }
 
-async function buildImagePreview(fileInfo) {
-  const url = await createPreviewUrl(fileInfo);
+function buildImagePreview(fileInfo) {
+  const url = fileUrl(fileInfo.fullPath);
   const wrapper = document.createElement('div');
   wrapper.className = 'preview-content preview-image';
   const img = document.createElement('img');
@@ -167,8 +163,8 @@ async function buildImagePreview(fileInfo) {
   return wrapper;
 }
 
-async function buildVideoPreview(fileInfo) {
-  const url = await createPreviewUrl(fileInfo);
+function buildVideoPreview(fileInfo) {
+  const url = fileUrl(fileInfo.fullPath);
   const wrapper = document.createElement('div');
   wrapper.className = 'preview-content preview-video';
   const video = document.createElement('video');
@@ -180,8 +176,8 @@ async function buildVideoPreview(fileInfo) {
   return wrapper;
 }
 
-async function buildAudioPreview(fileInfo) {
-  const url = await createPreviewUrl(fileInfo);
+function buildAudioPreview(fileInfo) {
+  const url = fileUrl(fileInfo.fullPath);
   const wrapper = document.createElement('div');
   wrapper.className = 'preview-content preview-audio';
   wrapper.innerHTML = `<div class="preview-audio-icon">${icons.audio}</div>`;
@@ -193,8 +189,8 @@ async function buildAudioPreview(fileInfo) {
   return wrapper;
 }
 
-async function buildPdfPreview(fileInfo) {
-  const url = await createPreviewUrl(fileInfo);
+function buildPdfPreview(fileInfo) {
+  const url = fileUrl(fileInfo.fullPath);
   const wrapper = document.createElement('div');
   wrapper.className = 'preview-content preview-pdf';
   const embed = document.createElement('embed');
@@ -208,8 +204,9 @@ async function buildTextPreview(fileInfo, isCode) {
   if (fileInfo.size > MAX_TEXT_SIZE) {
     return buildFallbackPreview(fileInfo, 'File too large for text preview');
   }
-  const file = await fileInfo.fileHandle.getFile();
-  const text = await file.text();
+  const url = fileUrl(fileInfo.fullPath);
+  const response = await fetch(url);
+  const text = await response.text();
   const wrapper = document.createElement('div');
   wrapper.className = 'preview-content preview-text';
   const pre = document.createElement('pre');
@@ -221,7 +218,6 @@ async function buildTextPreview(fileInfo, isCode) {
   return wrapper;
 }
 
-/** Documents: render as text if small enough, otherwise fallback. */
 async function buildDocumentPreview(fileInfo) {
   const textExtensions = ['txt', 'md', 'csv', 'log', 'rtf', 'tex', 'ini', 'cfg', 'conf'];
   if (textExtensions.includes(fileInfo.extension) || fileInfo.type.startsWith('text/')) {
@@ -272,7 +268,6 @@ function onZoomWheel(e) {
     return;
   }
 
-  // Zoom toward cursor position within the wrapper
   const rect = currentZoomWrapper.getBoundingClientRect();
   const cursorX = e.clientX - rect.left;
   const cursorY = e.clientY - rect.top;

@@ -1,49 +1,20 @@
 /**
  * Comparison engine.
- * Compares source files against destination files using selected methods.
+ * Metadata comparisons run locally. Content comparisons delegate to the C# backend.
  * Returns files that exist in source but are missing from destination.
  */
 
-let worker = null;
-let workerRequestId = 0;
-const pendingWorkerRequests = new Map();
+import { comparePair } from './apiClient.js';
+
 let cancelRequested = false;
 
-/** Signal the comparison loop to stop and abort pending worker requests. */
+/** Signal the comparison loop to stop. */
 export function cancelComparison() {
   cancelRequested = true;
-  for (const [id, pending] of pendingWorkerRequests) {
-    pending.reject(new Error('Comparison cancelled'));
-  }
-  pendingWorkerRequests.clear();
 }
 
-function getWorker() {
-  if (!worker) {
-    worker = new Worker(new URL('./workers/compareWorker.js', import.meta.url), { type: 'module' });
-    worker.addEventListener('message', (event) => {
-      const { id, result, error } = event.data;
-      const pending = pendingWorkerRequests.get(id);
-      if (pending) {
-        pendingWorkerRequests.delete(id);
-        if (error) {
-          pending.reject(new Error(error));
-        } else {
-          pending.resolve(result);
-        }
-      }
-    });
-  }
-  return worker;
-}
-
-function workerRequest(type, data) {
-  return new Promise((resolve, reject) => {
-    const id = ++workerRequestId;
-    pendingWorkerRequests.set(id, { resolve, reject });
-    getWorker().postMessage({ type, id, data });
-  });
-}
+/** No-op — workers are no longer used; backend handles content comparison. */
+export function terminateWorker() {}
 
 /**
  * Compare two files using the selected comparison methods.
@@ -77,66 +48,29 @@ async function areFilesEqual(sourceFile, destFile, methods) {
     if (sourceFile.relativePath !== destFile.relativePath) return false;
   }
 
-  // Chunk probe (needs file content)
+  // Content-based comparisons — delegated to C# backend
   if (methods.chunkProbe) {
     try {
-      const [srcFileObj, destFileObj] = await Promise.all([
-        sourceFile.fileHandle.getFile(),
-        destFile.fileHandle.getFile(),
-      ]);
-      const [srcBuf, destBuf] = await Promise.all([
-        srcFileObj.arrayBuffer(),
-        destFileObj.arrayBuffer(),
-      ]);
-      const match = await workerRequest('chunkProbe', {
-        buffer1: srcBuf,
-        buffer2: destBuf,
-        size1: srcFileObj.size,
-        size2: destFileObj.size,
-      });
-      if (!match) return false;
+      const result = await comparePair(sourceFile.fullPath, destFile.fullPath, 'chunkProbe');
+      if (!result.match) return false;
     } catch {
       return false;
     }
   }
 
-  // SHA-256 hash compare
   if (methods.hashCompare) {
     try {
-      const [srcFileObj, destFileObj] = await Promise.all([
-        sourceFile.fileHandle.getFile(),
-        destFile.fileHandle.getFile(),
-      ]);
-      const [srcBuf, destBuf] = await Promise.all([
-        srcFileObj.arrayBuffer(),
-        destFileObj.arrayBuffer(),
-      ]);
-      const [hash1, hash2] = await Promise.all([
-        workerRequest('hash', { buffer: srcBuf }),
-        workerRequest('hash', { buffer: destBuf }),
-      ]);
-      if (hash1 !== hash2) return false;
+      const result = await comparePair(sourceFile.fullPath, destFile.fullPath, 'hash');
+      if (!result.match) return false;
     } catch {
       return false;
     }
   }
 
-  // Full byte compare
   if (methods.fullByteCompare) {
     try {
-      const [srcFileObj, destFileObj] = await Promise.all([
-        sourceFile.fileHandle.getFile(),
-        destFile.fileHandle.getFile(),
-      ]);
-      const [srcBuf, destBuf] = await Promise.all([
-        srcFileObj.arrayBuffer(),
-        destFileObj.arrayBuffer(),
-      ]);
-      const match = await workerRequest('fullCompare', {
-        buffer1: srcBuf,
-        buffer2: destBuf,
-      });
-      if (!match) return false;
+      const result = await comparePair(sourceFile.fullPath, destFile.fullPath, 'fullByteCompare');
+      if (!result.match) return false;
     } catch {
       return false;
     }
@@ -147,7 +81,6 @@ async function areFilesEqual(sourceFile, destFile, methods) {
 
 /**
  * Build a lookup map for quick candidate finding.
- * Groups dest files by name for fast access.
  */
 function buildDestLookup(destFiles) {
   const byName = new Map();
@@ -208,7 +141,6 @@ export async function compareFiles(sourceFiles, destFiles, config, onProgress) {
       await new Promise(resolve => setTimeout(resolve, 0));
     }
 
-    /** Report which candidate is being compared (only for slow content methods). */
     function reportCandidate(candidate) {
       if (needsContent) {
         onProgress({
@@ -229,7 +161,6 @@ export async function compareFiles(sourceFiles, destFiles, config, onProgress) {
         found = await areFilesEqual(sourceFile, exactMatch, methods);
       }
       if (!found) {
-        // Use name index when name compare is on, otherwise use size index
         const pool = methods.nameCompare
           ? lookup.byName.get(sourceFile.name) || []
           : lookup.bySize.get(sourceFile.size) || [];
@@ -244,7 +175,6 @@ export async function compareFiles(sourceFiles, destFiles, config, onProgress) {
         }
       }
     } else {
-      // Deep scan: use name index when available, otherwise size index
       const candidates = methods.nameCompare
         ? lookup.byName.get(sourceFile.name) || []
         : lookup.bySize.get(sourceFile.size) || [];
@@ -266,15 +196,4 @@ export async function compareFiles(sourceFiles, destFiles, config, onProgress) {
   onProgress({ processed: total, total, currentFile: 'Done' });
 
   return missing;
-}
-
-/**
- * Cleanup the worker when done.
- */
-export function terminateWorker() {
-  if (worker) {
-    worker.terminate();
-    worker = null;
-    pendingWorkerRequests.clear();
-  }
 }
