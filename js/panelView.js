@@ -8,6 +8,7 @@ import { getFileIcon, createThumbnailObserver } from './thumbnailGenerator.js';
 import { icons } from './icons.js';
 import { getState, setState } from './state.js';
 import { buildFolderTree, renderTree, getFilesAtPath, getAllFilesUnderPath, createExpandedState } from './treeView.js';
+import { openPreview } from './filePreview.js';
 
 /**
  * Render files into a grid.
@@ -44,6 +45,10 @@ export function renderFileGrid(gridElement, files, options = {}) {
   for (const fileInfo of files) {
     const tile = createFileTile(fileInfo, draggable);
     tile.dataset.filePath = fileInfo.relativePath;
+    tile.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      openPreview(fileInfo, files);
+    });
     gridElement.appendChild(tile);
     observer.observe(tile);
   }

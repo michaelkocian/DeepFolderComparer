@@ -1,0 +1,256 @@
+/* ─── File Preview Modal ─── */
+
+.preview-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+}
+
+.preview-modal.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.preview-container {
+  position: relative;
+  width: 95vw;
+  height: 95vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+/* ─── Header ─── */
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-bg-header);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  min-height: 40px;
+}
+
+.preview-title-area {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.preview-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--color-accent);
+}
+
+.preview-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.preview-filename {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.preview-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.preview-counter {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  min-width: 50px;
+  text-align: center;
+}
+
+.preview-prev svg {
+  transform: rotate(180deg);
+}
+
+.preview-close {
+  flex-shrink: 0;
+  margin-left: var(--spacing-sm);
+}
+
+/* ─── Body ─── */
+
+.preview-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-loading,
+.preview-error {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-lg);
+  text-align: center;
+  padding: var(--spacing-xl);
+}
+
+.preview-error {
+  color: var(--color-error);
+}
+
+/* ─── Image ─── */
+
+.preview-image img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
+/* ─── Video ─── */
+
+.preview-video {
+  background: #000;
+}
+
+.preview-video video {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* ─── Audio ─── */
+
+.preview-audio {
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.preview-audio-icon {
+  width: 80px;
+  height: 80px;
+  color: var(--color-accent);
+}
+
+.preview-audio-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.preview-audio audio {
+  width: min(400px, 80%);
+}
+
+/* ─── PDF ─── */
+
+.preview-pdf embed {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* ─── Text / Code ─── */
+
+.preview-text {
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: auto;
+}
+
+.preview-text pre {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: var(--spacing-lg);
+  overflow: auto;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-md);
+  line-height: 1.6;
+  tab-size: 4;
+  white-space: pre;
+  word-wrap: normal;
+}
+
+.preview-text code {
+  font-family: inherit;
+}
+
+/* ─── Fallback ─── */
+
+.preview-fallback {
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+}
+
+.preview-fallback-icon {
+  width: 64px;
+  height: 64px;
+  color: var(--color-text-muted);
+}
+
+.preview-fallback-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.preview-fallback-name {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--color-text-bright);
+  word-break: break-all;
+  text-align: center;
+}
+
+.preview-fallback-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.preview-fallback-message {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
